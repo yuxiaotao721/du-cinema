@@ -205,10 +205,33 @@ class DuCinemaApp {
     if (this.currentType) params.set('t', this.currentType);
     if (this.currentKeyword) params.set('wd', this.currentKeyword);
 
+    let data = null;
     try {
+      // 1. Try local serverless / edge endpoint (/api/vod)
       const res = await fetch(`${this.apiEndpoint}?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (e) {
+      console.log('Local /api/vod unavailable, trying cloud proxy fallback...');
+    }
+
+    // 2. If static hosting without edge runtime, fallback to CORS gateway
+    if (!data || !data.list) {
+      try {
+        const upstreamUrl = `https://cj.lziapi.com/api.php/provide/vod/?${params.toString()}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(upstreamUrl)}`;
+        const fallbackRes = await fetch(proxyUrl);
+        if (fallbackRes.ok) {
+          data = await fallbackRes.json();
+        }
+      } catch (proxyErr) {
+        console.error('Proxy fallback error:', proxyErr);
+      }
+    }
+
+    try {
+      if (!data) throw new Error('All data sources unreachable');
 
       let list = data.list || [];
 
