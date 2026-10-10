@@ -18,6 +18,8 @@ class DuCinemaApp {
     this.playerMode = 'iframe'; // 'iframe' or 'hls'
     this.currentTvCat = 'all';
     this.currentLiveChannel = null;
+    this.currentTvLineIndex = 0;
+    this.tvWatchdogTimer = null;
     this.isLiveMode = false;
     
     this.currentSource = 'guangsu';
@@ -484,10 +486,30 @@ class DuCinemaApp {
     this.currentEpisodes = this.parsePlayUrls(movie.vod_play_url);
     this.currentEpIndex = epIndex;
 
+    this.isLiveMode = false;
+    this.currentLiveChannel = null;
+    if (this.tvWatchdogTimer) {
+      clearTimeout(this.tvWatchdogTimer);
+      this.tvWatchdogTimer = null;
+    }
+
     const modal = document.getElementById('player-modal');
     const titleEl = document.getElementById('modal-movie-title');
     const epCountBadge = document.getElementById('ep-count-badge');
     const epGrid = document.getElementById('episodes-grid');
+    if (epGrid) epGrid.className = 'episodes-grid';
+
+    // Restore standard movie mode buttons
+    const modeBar = document.querySelector('.player-mode-bar');
+    if (modeBar) {
+      modeBar.innerHTML = `
+        <span class="mode-label">播放通道：</span>
+        <button class="mode-tab ${this.playerMode === 'iframe' ? 'active' : ''}" id="btn-mode-iframe" title="免跨域、免代理限制，100% 极速加载">⚡ 极速免检通道 (推荐)</button>
+        <button class="mode-tab ${this.playerMode === 'hls' ? 'active' : ''}" id="btn-mode-hls" title="原生 HLS 播放器，支持自由倍速与画中画">🍎 原生 HLS 通道</button>
+      `;
+      document.getElementById('btn-mode-iframe')?.addEventListener('click', () => this.setPlayerMode('iframe'));
+      document.getElementById('btn-mode-hls')?.addEventListener('click', () => this.setPlayerMode('hls'));
+    }
     
     document.getElementById('meta-category').innerText = movie.type_name || movie.vod_class || '影视';
     document.getElementById('meta-year').innerText = movie.vod_year || '2026';
@@ -605,7 +627,8 @@ class DuCinemaApp {
     let title = '';
 
     if (this.isLiveMode && this.currentLiveChannel) {
-      streamUrl = this.currentLiveChannel.streamUrl;
+      const urls = this.currentLiveChannel.streamUrls || [this.currentLiveChannel.streamUrl];
+      streamUrl = urls[this.currentTvLineIndex] || urls[0] || this.currentLiveChannel.streamUrl;
       title = `[电视直播] ${this.currentLiveChannel.name}`;
     } else if (this.currentMovie && this.currentEpisodes && this.currentEpisodes[this.currentEpIndex]) {
       const ep = this.currentEpisodes[this.currentEpIndex];
@@ -639,7 +662,8 @@ class DuCinemaApp {
   copyCurrentStreamUrl() {
     let url = '';
     if (this.isLiveMode && this.currentLiveChannel) {
-      url = this.currentLiveChannel.streamUrl;
+      const urls = this.currentLiveChannel.streamUrls || [this.currentLiveChannel.streamUrl];
+      url = urls[this.currentTvLineIndex] || urls[0] || this.currentLiveChannel.streamUrl;
     } else if (this.currentEpisodes && this.currentEpisodes[this.currentEpIndex]) {
       url = this.currentEpisodes[this.currentEpIndex].m3u8Url;
     }
@@ -653,6 +677,11 @@ class DuCinemaApp {
     const modal = document.getElementById('player-modal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
+
+    if (this.tvWatchdogTimer) {
+      clearTimeout(this.tvWatchdogTimer);
+      this.tvWatchdogTimer = null;
+    }
 
     if (this.iframeEl) {
       this.iframeEl.src = 'about:blank';
@@ -747,6 +776,11 @@ class DuCinemaApp {
     list.forEach(ch => {
       const card = document.createElement('div');
       card.className = 'channel-card';
+      const lineCount = (ch.streamUrls && ch.streamUrls.length) || 1;
+      const lineBadge = lineCount > 1 
+        ? `<span class="channel-badge-res" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">${lineCount} 线自愈</span>` 
+        : '';
+
       card.innerHTML = `
         <div class="channel-card-top">
           <div class="channel-logo-wrap">
@@ -757,6 +791,7 @@ class DuCinemaApp {
             <h4 class="channel-title" title="${ch.name}">${ch.name}</h4>
             <div class="channel-tags-row">
               <span class="channel-badge-res">${ch.badge}</span>
+              ${lineBadge}
               <span class="channel-badge-cat">${ch.categoryName}</span>
               <span class="live-badge-glow" style="padding: 1px 6px; font-size: 0.65rem;">
                 <span class="live-dot-pulse" style="width: 5px; height: 5px;"></span> LIVE
@@ -782,6 +817,7 @@ class DuCinemaApp {
       card.querySelector('.btn-tv-dushang').addEventListener('click', (e) => {
         e.stopPropagation();
         this.currentLiveChannel = ch;
+        this.currentTvLineIndex = 0;
         this.isLiveMode = true;
         this.invokeDuShangPlayer();
       });
@@ -796,6 +832,7 @@ class DuCinemaApp {
   openLiveTvPlayer(channel) {
     this.isLiveMode = true;
     this.currentLiveChannel = channel;
+    this.currentTvLineIndex = 0;
     this.currentMovie = null;
 
     const modal = document.getElementById('player-modal');
@@ -805,8 +842,8 @@ class DuCinemaApp {
     
     document.getElementById('meta-category').innerText = channel.categoryName || '电视直播';
     document.getElementById('meta-year').innerText = channel.badge || '1080P';
-    document.getElementById('meta-actor').innerText = '卫星实时广播 / 原画无损';
-    document.getElementById('meta-plot').innerText = `正在播放：${channel.name}。当前节目排期：${channel.epg || '精彩节目全天候滚动直播'}。支持使用渡赏 60fps 硬解与系统画中画浮窗播放。`;
+    document.getElementById('meta-actor').innerText = '卫星实时广播 / 原画无损 / 智能防卡顿';
+    document.getElementById('meta-plot').innerText = `正在播放：${channel.name}。当前节目排期：${channel.epg || '精彩节目全天候滚动直播'}。已配置多线路极速容灾，若遇缓冲卡顿系统将自动秒切备用线路，亦支持点击「呼叫渡赏」在手机/电视大屏进行 GPU 原生硬解。`;
 
     titleEl.innerHTML = `<span class="live-dot-pulse" style="margin-right: 6px;"></span>[直播] ${channel.name}`;
     epCountBadge.innerText = `快速换台 (${(window.TV_CHANNELS || []).length} 台)`;
@@ -831,13 +868,43 @@ class DuCinemaApp {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Play TV live stream using HLS native mode
+    // Play TV live stream using HLS native mode with multi-line support
     this.setPlayerMode('hls');
-    this.playLiveStream(channel);
+    this.playLiveStream(channel, 0);
   }
 
-  playLiveStream(channel) {
-    document.getElementById('modal-current-ep').innerText = `正在直播 · ${channel.badge} · 零缓冲秒开`;
+  playLiveStream(channel, lineIndex = 0) {
+    const urls = channel.streamUrls && channel.streamUrls.length ? channel.streamUrls : [channel.streamUrl];
+    if (lineIndex >= urls.length) lineIndex = 0;
+    this.currentTvLineIndex = lineIndex;
+    const streamUrl = urls[lineIndex];
+
+    document.getElementById('modal-current-ep').innerText = `正在直播 · ${channel.badge} · 线路 ${lineIndex + 1}/${urls.length} ${lineIndex === 0 ? '(极速优先)' : '(备用稳定)'}`;
+    
+    // Render Multi-line buttons on mode bar
+    const modeBar = document.querySelector('.player-mode-bar');
+    if (modeBar) {
+      const buttonsHtml = urls.map((u, idx) => `
+        <button class="mode-tab ${idx === lineIndex ? 'active' : ''}" data-line="${idx}">
+          ${idx === 0 ? '⚡ 线路 1 (极速优先)' : `🛰️ 线路 ${idx + 1} (备用线路)`}
+        </button>
+      `).join('');
+
+      modeBar.innerHTML = `
+        <span class="mode-label">信号源线路：</span>
+        ${buttonsHtml}
+      `;
+
+      modeBar.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = parseInt(btn.dataset.line, 10);
+          if (target !== this.currentTvLineIndex) {
+            this.playLiveStream(channel, target);
+          }
+        });
+      });
+    }
+
     const video = this.videoEl;
     const iframe = this.iframeEl;
     const loadingOverlay = document.getElementById('player-loading');
@@ -847,18 +914,54 @@ class DuCinemaApp {
     video.style.display = 'block';
     loadingOverlay.style.display = 'flex';
 
+    if (this.tvWatchdogTimer) {
+      clearTimeout(this.tvWatchdogTimer);
+      this.tvWatchdogTimer = null;
+    }
+
     if (this.hls) {
       this.hls.destroy();
       this.hls = null;
     }
 
-    const streamUrl = channel.streamUrl;
+    const switchNextLine = (reason = '') => {
+      if (this.tvWatchdogTimer) {
+        clearTimeout(this.tvWatchdogTimer);
+        this.tvWatchdogTimer = null;
+      }
+      if (lineIndex + 1 < urls.length) {
+        console.warn(`[LiveWatchdog] Line ${lineIndex + 1} issue (${reason}). Auto-switching to line ${lineIndex + 2}...`);
+        this.showToast(`⚡ 线路 ${lineIndex + 1} 响应稍慢，已为您无缝秒切备用线路 ${lineIndex + 2}`);
+        this.playLiveStream(channel, lineIndex + 1);
+      } else {
+        loadingOverlay.style.display = 'none';
+        this.showToast('⚠️ 网页端当前信号受浏览器跨域保护限制，推荐点击下方「呼叫渡赏」直连原生硬解！', 4500);
+      }
+    };
+
+    // Watchdog: If buffering exceeds 4.2 seconds, automatically switch to next line
+    this.tvWatchdogTimer = setTimeout(() => {
+      if (this.isLiveMode && (video.paused || video.readyState < 2 || video.currentTime === 0)) {
+        switchNextLine('Buffering timeout');
+      }
+    }, 4200);
+
+    const onPlaySuccess = () => {
+      if (this.tvWatchdogTimer) {
+        clearTimeout(this.tvWatchdogTimer);
+        this.tvWatchdogTimer = null;
+      }
+      loadingOverlay.style.display = 'none';
+    };
+
+    video.onplaying = onPlaySuccess;
+    video.onloadeddata = onPlaySuccess;
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // iOS Safari native HLS
       video.src = streamUrl;
       video.addEventListener('loadedmetadata', () => {
-        loadingOverlay.style.display = 'none';
+        onPlaySuccess();
         video.play().catch(() => {});
       }, { once: true });
     } else if (window.Hls && Hls.isSupported()) {
@@ -866,25 +969,28 @@ class DuCinemaApp {
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 30
+        backBufferLength: 30,
+        manifestLoadingTimeOut: 3500,
+        manifestLoadingMaxRetry: 1,
+        levelLoadingTimeOut: 3500,
+        fragLoadingTimeOut: 4000
       });
       this.hls.loadSource(streamUrl);
       this.hls.attachMedia(video);
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        loadingOverlay.style.display = 'none';
+        onPlaySuccess();
         video.play().catch(() => {});
       });
 
       this.hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          loadingOverlay.style.display = 'none';
-          this.showToast('⚠️ 当前电台信号切换中，建议点击「呼叫渡赏硬解播放」直连原生硬解');
+          switchNextLine(`Fatal HLS error: ${data.details || data.type}`);
         }
       });
     } else {
       video.src = streamUrl;
-      loadingOverlay.style.display = 'none';
+      onPlaySuccess();
       video.play().catch(() => {});
     }
   }
