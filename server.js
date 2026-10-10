@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-const UPSTREAM_API = 'https://cj.lziapi.com/api.php/provide/vod/';
+// 使用无 IP 封锁、全球直连且支持 CORS 的光速超清源
+const UPSTREAM_API = 'https://api.guangsuapi.com/api.php/provide/vod/';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',

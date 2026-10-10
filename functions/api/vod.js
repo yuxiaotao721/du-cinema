@@ -14,7 +14,7 @@ export async function onRequest(context) {
     });
   }
 
-  const upstream = 'https://cj.lziapi.com/api.php/provide/vod/';
+  const upstream = 'https://api.guangsuapi.com/api.php/provide/vod/';
   const searchParams = url.searchParams;
   if (!searchParams.has('ac')) {
     searchParams.set('ac', 'detail');

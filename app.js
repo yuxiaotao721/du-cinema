@@ -1,10 +1,11 @@
 /**
  * 渡影 (DuCinema) - 渡赏专属云端片库前端逻辑
- * 核心功能：
- * 1. 聚合全网高清影视流（m3u8 / MP4）
- * 2. 深度集成「渡赏」原生唤起协议 (dushang://play?url=...&title=...)
- * 3. 苹果 Safari / 电脑端 HLS.js 零广告极速硬解播放
- * 4. 渡赏片库 API 标准分发
+ * 核心升级：
+ * 1. 挂载光速超清源（全球免 IP 封锁、原生支持 CORS）
+ * 2. 独家「双模态播放内核」：
+ *    - ⚡ 极速免检通道：Iframe 官方嵌入秒播，100% 免疫任何代理节点和浏览器跨域限制
+ *    - 🍎 原生 HLS 通道：HTML5 原生解码，支持全屏、画中画与 0.5x~3.0x 倍速
+ *    - ⛵ 渡赏硬解通道：dushang://play?url=... 一键呼叫安卓 DuOS 原生 App
  */
 
 class DuCinemaApp {
@@ -14,6 +15,7 @@ class DuCinemaApp {
     this.currentType = '';
     this.currentYear = '';
     this.currentKeyword = '';
+    this.playerMode = 'iframe'; // 'iframe' or 'hls'
     
     this.movies = [];
     this.currentMovie = null;
@@ -22,19 +24,20 @@ class DuCinemaApp {
     
     this.hls = null;
     this.videoEl = document.getElementById('html5-player');
+    this.iframeEl = document.getElementById('iframe-player');
 
-    // High-res curated fallback blockbusters for instant showcase
+    // High-res curated fallback blockbuster (Guangsu CDN)
     this.featuredFallback = {
       vod_id: 99999,
-      vod_name: '流浪地球 2 (The Wandering Earth II)',
-      vod_year: '2023',
+      vod_name: '流浪地球 3(上)（前导预告）',
+      vod_year: '2027',
       vod_area: '中国大陆',
       vod_class: '科幻 / 冒险 / 灾难',
-      vod_actor: '吴京, 刘德华, 李雪健, 沙溢, 宁理, 王智, 朱颜曼滋',
-      vod_pic: 'https://img.lzipic.com/upload/vod/20230122-1/658b4eb14b9c9e530666016e7888b1b8.jpg',
-      vod_score: '8.3',
-      vod_blurb: '太阳即将毁灭，人类在地球表面建造出巨大的推进器，寻找新家园。然而宇宙之路危机四伏，为了拯救地球，流浪地球时代的年轻人再次挺身而出，展开争分夺秒的生死之战...',
-      vod_play_url: '4K原盘完整版$https://v.lzcdn28.com/20230122/410_f2998a44/index.m3u8'
+      vod_actor: '吴京, 刘德华, 李雪健, 沙溢',
+      vod_pic: 'https://img.guangsuimage.com/upload/vod/20240904-1/363b9074b1e52fc2a76fa8e9323c6b2a.jpg',
+      vod_score: '9.0',
+      vod_blurb: '太阳即将毁灭，人类在地球表面建造出巨大的推进器，寻找新家园。然而宇宙之路危机四伏，人类再次挺身而出...',
+      vod_play_url: '预告片$https://v.gsuus.com/play/xboNyywa$$$预告片$https://v.gsuus.com/play/xboNyywa/index.m3u8'
     };
 
     this.init();
@@ -114,6 +117,19 @@ class DuCinemaApp {
       this.loadCatalog();
     });
 
+    // Player Mode Toggle (Iframe vs HLS)
+    const btnIframe = document.getElementById('btn-mode-iframe');
+    const btnHls = document.getElementById('btn-mode-hls');
+
+    if (btnIframe && btnHls) {
+      btnIframe.addEventListener('click', () => {
+        this.setPlayerMode('iframe');
+      });
+      btnHls.addEventListener('click', () => {
+        this.setPlayerMode('hls');
+      });
+    }
+
     // DuShang Deep Link & Copy Buttons in Modal
     document.getElementById('modal-dushang-btn').addEventListener('click', () => {
       this.invokeDuShangPlayer();
@@ -124,20 +140,13 @@ class DuCinemaApp {
 
     // Hero Spotlight Actions
     document.getElementById('hero-play-dushang').addEventListener('click', () => {
-      if (this.featuredMovie) {
-        this.openModal(this.featuredMovie, 0);
-        this.invokeDuShangPlayer();
-      } else {
-        this.openModal(this.featuredFallback, 0);
-        this.invokeDuShangPlayer();
-      }
+      const target = this.featuredMovie || this.featuredFallback;
+      this.openModal(target, 0);
+      this.invokeDuShangPlayer();
     });
     document.getElementById('hero-play-web').addEventListener('click', () => {
-      if (this.featuredMovie) {
-        this.openModal(this.featuredMovie, 0);
-      } else {
-        this.openModal(this.featuredFallback, 0);
-      }
+      const target = this.featuredMovie || this.featuredFallback;
+      this.openModal(target, 0);
     });
 
     // API Modal Dialog
@@ -153,12 +162,32 @@ class DuCinemaApp {
 
     // Source Switch
     document.getElementById('btn-source-switch').addEventListener('click', () => {
-      this.showToast('⚡ 当前已连接主线 CDN 极速加速线路 (量子/非凡双擎集群)');
+      this.showToast('⚡ 当前已连接「光速极速源」(全球直连免代理、无跨域限制)');
     });
   }
 
+  setPlayerMode(mode) {
+    this.playerMode = mode;
+    const btnIframe = document.getElementById('btn-mode-iframe');
+    const btnHls = document.getElementById('btn-mode-hls');
+
+    if (mode === 'iframe') {
+      btnIframe.classList.add('active');
+      btnHls.classList.remove('active');
+      this.showToast('⚡ 已切换到「极速免检通道」(100% 秒播)');
+    } else {
+      btnHls.classList.add('active');
+      btnIframe.classList.remove('active');
+      this.showToast('🍎 已切换到「原生 HLS 通道」(支持倍速与画中画)');
+    }
+
+    if (this.currentEpisodes.length > 0) {
+      this.playEpisode(this.currentEpIndex);
+    }
+  }
+
   updateApiUrlDisplay() {
-    const origin = window.location.origin || 'https://ducinema.yxt.dev';
+    const origin = window.location.origin || 'https://yuxiaotao721.github.io/du-cinema';
     const apiUrl = `${origin}/api/vod`;
     const el = document.getElementById('api-url-text');
     if (el) el.innerText = apiUrl;
@@ -194,7 +223,6 @@ class DuCinemaApp {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
 
-    // Show Skeletons
     grid.innerHTML = Array(12).fill(0).map(() => '<div class="skeleton-card"></div>').join('');
     counter.innerText = '正在全速拉取云端流...';
 
@@ -207,19 +235,18 @@ class DuCinemaApp {
 
     let data = null;
     try {
-      // 1. Try local serverless / edge endpoint (/api/vod)
       const res = await fetch(`${this.apiEndpoint}?${params.toString()}`);
       if (res.ok) {
         data = await res.json();
       }
     } catch (e) {
-      console.log('Local /api/vod unavailable, trying cloud proxy fallback...');
+      console.log('Local /api/vod unavailable, trying direct gateway...');
     }
 
-    // 2. If static hosting without edge runtime, fallback to CORS gateway
+    // Static hosting fallback (e.g. GitHub Pages)
     if (!data || !data.list) {
       try {
-        const upstreamUrl = `https://cj.lziapi.com/api.php/provide/vod/?${params.toString()}`;
+        const upstreamUrl = `https://api.guangsuapi.com/api.php/provide/vod/?${params.toString()}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(upstreamUrl)}`;
         const fallbackRes = await fetch(proxyUrl);
         if (fallbackRes.ok) {
@@ -231,11 +258,10 @@ class DuCinemaApp {
     }
 
     try {
-      if (!data) throw new Error('All data sources unreachable');
+      if (!data) throw new Error('Data sources unreachable');
 
       let list = data.list || [];
 
-      // Year filter if applied
       if (this.currentYear) {
         list = list.filter(item => (item.vod_year || '').includes(this.currentYear));
       }
@@ -256,12 +282,10 @@ class DuCinemaApp {
         return;
       }
 
-      // Render Spotlight Banner from first item on initial page load
       if (this.currentPage === 1 && !this.currentKeyword && list.length > 0) {
         this.updateHeroSpotlight(list[0]);
       }
 
-      // Render Cards
       grid.innerHTML = '';
       list.forEach((item, idx) => {
         const card = this.createMovieCard(item, idx);
@@ -275,7 +299,6 @@ class DuCinemaApp {
 
     } catch (err) {
       console.error('Fetch catalog error:', err);
-      // Fallback display
       this.renderFallbackGrid();
     }
   }
@@ -338,7 +361,7 @@ class DuCinemaApp {
         <span class="meta-tag gold-tag">${score}</span>
         <span class="meta-tag">${movie.type_name || movie.vod_class || '电影'}</span>
         <span class="meta-tag">${movie.vod_year || '2026'} · ${movie.vod_area || '全网'}</span>
-        <span class="meta-tag">超清 m3u8</span>
+        <span class="meta-tag">超清直连</span>
       `;
     }
   }
@@ -349,29 +372,7 @@ class DuCinemaApp {
     counter.innerText = '已加载离线精选推荐片库';
     
     const fallbackList = [
-      this.featuredFallback,
-      {
-        vod_id: 10001,
-        vod_name: '三体 (Three-Body)',
-        vod_year: '2023',
-        vod_pic: 'https://img.lzipic.com/upload/vod/20230115-1/1673789504_2723.jpg',
-        vod_score: '8.7',
-        type_name: '国产科幻剧',
-        vod_actor: '张鲁一, 于和伟, 陈瑾, 王子文, 林永健, 李小冉',
-        vod_blurb: '2007年，地球基础科学出现了异常的扰动，科学界人心惶惶。纳米物理学家汪淼与刑警史强联手调查，揭开地外文明“三体”入侵的震撼真相...',
-        vod_play_url: '第01集$https://v.lzcdn28.com/20230115/222_9d8ef922/index.m3u8#第02集$https://v.lzcdn28.com/20230115/223_09fe01c5/index.m3u8'
-      },
-      {
-        vod_id: 10002,
-        vod_name: '繁花 (Blossoms Shanghai)',
-        vod_year: '2024',
-        vod_pic: 'https://img.lzipic.com/upload/vod/20231227-1/4101e4dfad0b6e1ba420fcbca2537c44.jpg',
-        vod_score: '8.7',
-        type_name: '王家卫执导',
-        vod_actor: '胡歌, 马伊琍, 唐嫣, 辛芷蕾, 游本昌, 郑恺',
-        vod_blurb: '九十年代的上海处处是机遇与希望。阿宝变成宝总，黄河路上灯红酒绿，商海浮沉...',
-        vod_play_url: '第01集$https://v.lzcdn28.com/20231227/12903_23efbb80/index.m3u8#第02集$https://v.lzcdn28.com/20231227/12904_7e93da12/index.m3u8'
-      }
+      this.featuredFallback
     ];
 
     grid.innerHTML = '';
@@ -387,27 +388,39 @@ class DuCinemaApp {
   parsePlayUrls(rawString) {
     if (!rawString) return [];
     
-    // Some APIs separate lines by $$$
+    // Guangsu format: gsyun$$$gsm3u8
+    // Part 1: 第1集$https://v.gsuus.com/play/xxx (iframe web player)
+    // Part 2: 第1集$https://v.gsuus.com/play/xxx/index.m3u8 (direct m3u8)
     const parts = rawString.split('$$$');
-    // Prefer the part that contains .m3u8
-    let targetPart = parts.find(p => p.includes('.m3u8')) || parts[parts.length - 1] || rawString;
+    
+    let m3u8Part = parts.find(p => p.includes('.m3u8'));
+    let webPart = parts.find(p => !p.includes('.m3u8') && (p.includes('/play/') || p.includes('/share/')));
+    
+    if (!m3u8Part) m3u8Part = parts[parts.length - 1] || '';
+    if (!webPart) webPart = parts[0] || '';
+
+    const m3u8Items = m3u8Part.split('#').filter(Boolean);
+    const webItems = webPart.split('#').filter(Boolean);
 
     const episodes = [];
-    const epItems = targetPart.split('#');
-    epItems.forEach(ep => {
-      if (!ep.trim()) return;
-      const [name, url] = ep.split('$');
-      if (url) {
-        episodes.push({
-          name: name.trim() || '正片',
-          url: url.trim()
-        });
-      } else if (name.startsWith('http')) {
-        episodes.push({
-          name: '全片放映',
-          url: name.trim()
-        });
+    m3u8Items.forEach((item, index) => {
+      const [mName, mUrl] = item.split('$');
+      let finalM3u8 = mUrl || mName;
+      
+      let finalIframe = '';
+      if (webItems[index]) {
+        const [wName, wUrl] = webItems[index].split('$');
+        finalIframe = wUrl || wName;
       }
+      if (!finalIframe) {
+        finalIframe = finalM3u8;
+      }
+
+      episodes.push({
+        name: (mName || `第${index + 1}集`).trim(),
+        m3u8Url: finalM3u8.trim(),
+        iframeUrl: finalIframe.trim()
+      });
     });
 
     return episodes;
@@ -423,7 +436,6 @@ class DuCinemaApp {
     const epCountBadge = document.getElementById('ep-count-badge');
     const epGrid = document.getElementById('episodes-grid');
     
-    // Metadata fields
     document.getElementById('meta-category').innerText = movie.type_name || movie.vod_class || '影视';
     document.getElementById('meta-year').innerText = movie.vod_year || '2026';
     document.getElementById('meta-actor').innerText = movie.vod_actor || '未标注';
@@ -432,7 +444,6 @@ class DuCinemaApp {
     titleEl.innerText = movie.vod_name || '播放影片';
     epCountBadge.innerText = `共 ${this.currentEpisodes.length || 1} 集`;
 
-    // Render Episode Buttons
     epGrid.innerHTML = '';
     if (this.currentEpisodes.length === 0) {
       epGrid.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">暂无有效播放源</div>';
@@ -451,7 +462,6 @@ class DuCinemaApp {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Play video
     this.playEpisode(epIndex);
   }
 
@@ -468,19 +478,39 @@ class DuCinemaApp {
     if (!this.currentEpisodes || !this.currentEpisodes[index]) return;
 
     const ep = this.currentEpisodes[index];
-    const streamUrl = ep.url;
     document.getElementById('modal-current-ep').innerText = `正在播放：${ep.name}`;
 
+    const video = this.videoEl;
+    const iframe = this.iframeEl;
     const loadingOverlay = document.getElementById('player-loading');
+
+    // 1. Iframe Mode (Default & 100% Guaranteed cross-origin free)
+    if (this.playerMode === 'iframe') {
+      if (this.hls) {
+        this.hls.destroy();
+        this.hls = null;
+      }
+      video.pause();
+      video.style.display = 'none';
+      loadingOverlay.style.display = 'none';
+
+      iframe.style.display = 'block';
+      iframe.src = ep.iframeUrl;
+      return;
+    }
+
+    // 2. Native HLS Mode
+    iframe.src = 'about:blank';
+    iframe.style.display = 'none';
+    video.style.display = 'block';
     loadingOverlay.style.display = 'flex';
 
-    // Teardown previous Hls
     if (this.hls) {
       this.hls.destroy();
       this.hls = null;
     }
 
-    const video = this.videoEl;
+    const streamUrl = ep.m3u8Url;
 
     if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
       this.hls = new Hls({
@@ -496,12 +526,13 @@ class DuCinemaApp {
       });
       this.hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          console.error('HLS Fatal Error:', data);
+          console.error('HLS Fatal Error, falling back to iframe mode...', data);
           loadingOverlay.style.display = 'none';
+          // Auto fallback to iframe if HLS encounters network error
+          this.setPlayerMode('iframe');
         }
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl') || streamUrl.endsWith('.mp4')) {
-      // Native Safari / iOS support
       video.src = streamUrl;
       video.addEventListener('loadedmetadata', () => {
         loadingOverlay.style.display = 'none';
@@ -520,26 +551,22 @@ class DuCinemaApp {
     }
 
     const ep = this.currentEpisodes[this.currentEpIndex];
-    const streamUrl = ep.url;
+    const streamUrl = ep.m3u8Url;
     const title = `${this.currentMovie.vod_name} - ${ep.name}`;
 
-    // Construct the custom URL Scheme for DuShang
     const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
 
     this.showToast('🚀 正在通过 dushang:// 协议唤醒「渡赏」硬解放映...');
 
-    // Attempt to invoke the native intent
     window.location.href = dushangScheme;
-
-    // Automatically copy direct link as convenience fallback
     navigator.clipboard.writeText(streamUrl).catch(() => {});
   }
 
   copyCurrentStreamUrl() {
     if (!this.currentEpisodes || !this.currentEpisodes[this.currentEpIndex]) return;
-    const url = this.currentEpisodes[this.currentEpIndex].url;
+    const url = this.currentEpisodes[this.currentEpIndex].m3u8Url;
     navigator.clipboard.writeText(url).then(() => {
-      this.showToast('📋 m3u8 高清直链已复制！可在任何外部播放器粘贴播放。');
+      this.showToast('📋 m3u8 高清直链已复制！可在渡赏或任何外部播放器粘贴播放。');
     });
   }
 
@@ -548,6 +575,9 @@ class DuCinemaApp {
     modal.classList.remove('active');
     document.body.style.overflow = '';
 
+    if (this.iframeEl) {
+      this.iframeEl.src = 'about:blank';
+    }
     if (this.videoEl) {
       this.videoEl.pause();
       this.videoEl.removeAttribute('src');
@@ -579,7 +609,6 @@ class DuCinemaApp {
   }
 }
 
-// Instantiate App
 window.addEventListener('DOMContentLoaded', () => {
   window.app = new DuCinemaApp();
 });

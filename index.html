@@ -176,8 +176,14 @@
         
         <!-- Left: Video Player Stage -->
         <div class="player-stage">
+          <div class="player-mode-bar">
+            <span class="mode-label">播放通道：</span>
+            <button class="mode-tab active" id="btn-mode-iframe" title="免跨域、免代理限制，100% 极速加载">⚡ 极速免检通道 (推荐)</button>
+            <button class="mode-tab" id="btn-mode-hls" title="原生 HLS 播放器，支持自由倍速与画中画">🍎 原生 HLS 通道</button>
+          </div>
           <div class="video-container" id="video-container">
-            <video id="html5-player" playsinline webkit-playsinline controls preload="auto"></video>
+            <iframe id="iframe-player" allowfullscreen="true" scrolling="no" allow="autoplay; fullscreen" style="width: 100%; height: 100%; border: none;"></iframe>
+            <video id="html5-player" playsinline webkit-playsinline controls preload="auto" style="display: none;"></video>
             <div class="player-loading-overlay" id="player-loading" style="display: none;">
               <div class="spinner"></div>
               <span>🎬 正在缓冲高清切片...</span>

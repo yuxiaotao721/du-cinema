@@ -840,6 +840,40 @@ body {
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+.player-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 22, 32, 0.7);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.mode-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.mode-tab {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.mode-tab:hover {
+  color: #FFF;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.mode-tab.active {
+  background: var(--gold-gradient);
+  color: #0b0c10;
+  border-color: var(--gold-glow);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
 }
 
 .video-container {

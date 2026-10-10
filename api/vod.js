@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   const { ac = 'detail', wd = '', t = '', pg = '1', ids = '' } = req.query;
-  const upstream = 'https://cj.lziapi.com/api.php/provide/vod/';
+  const upstream = 'https://api.guangsuapi.com/api.php/provide/vod/';
 
   const params = new URLSearchParams();
   params.set('ac', ac);
