@@ -18,13 +18,13 @@ window.TV_CHANNELS = [
     "categoryName": "体育赛事",
     "badge": "1080P 50FPS",
     "logo": "https://live.fanmingming.com/tv/CCTV5.png",
-    "streamUrl": "http://125.125.236.31:9901/tsfile/live/0005_1.m3u8?key=txiptv&playlive=1&authid=0",
+    "streamUrl": "http://120.76.248.139/live/bfgd/4200000246.m3u8",
     "streamUrls": [
+      "http://120.76.248.139/live/bfgd/4200000246.m3u8",
       "http://125.125.236.31:9901/tsfile/live/0005_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "http://61.136.172.236:9901/tsfile/live/0005_1.m3u8",
       "http://183.11.239.36:808/hls/93/index.m3u8",
-      "http://120.238.94.82:9901/tsfile/live/1005_1.m3u8?key=txiptv",
-      "http://183.129.255.66:8480/hls/5/index.m3u8",
-      "http://61.136.172.236:9901/tsfile/live/0005_1.m3u8"
+      "http://120.238.94.82:9901/tsfile/live/1005_1.m3u8?key=txiptv"
     ],
     "epg": "天下足球 · 体育新闻 · 国际顶级职业联赛 · 现场直击",
     "hot": true
@@ -36,11 +36,11 @@ window.TV_CHANNELS = [
     "categoryName": "体育赛事",
     "badge": "1080P 高清",
     "logo": "https://live.fanmingming.com/tv/CCTV5plus.png",
-    "streamUrl": "http://183.11.239.36:808/hls/94/index.m3u8",
+    "streamUrl": "http://120.76.248.139/live/bfgd/4200000246.m3u8",
     "streamUrls": [
+      "http://120.76.248.139/live/bfgd/4200000246.m3u8",
       "http://183.11.239.36:808/hls/94/index.m3u8",
       "http://120.238.94.82:9901/tsfile/live/1016_1.m3u8?key=txiptv",
-      "http://183.129.255.66:8480/hls/6/index.m3u8",
       "http://125.125.236.31:9901/tsfile/live/0016_1.m3u8?key=txiptv&playlive=1&authid=0",
       "http://61.136.172.236:9901/tsfile/live/0016_1.m3u8"
     ],
@@ -101,10 +101,10 @@ window.TV_CHANNELS = [
     "categoryName": "央视频道",
     "badge": "1080P 50FPS",
     "logo": "https://live.fanmingming.com/tv/CCTV1.png",
-    "streamUrl": "http://61.136.172.236:9901/tsfile/live/0001_1.m3u8",
+    "streamUrl": "https://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8",
     "streamUrls": [
-      "http://61.136.172.236:9901/tsfile/live/0001_1.m3u8",
-      "http://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8"
+      "https://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8",
+      "http://61.136.172.236:9901/tsfile/live/0001_1.m3u8"
     ],
     "epg": "新闻联播 · 晚间剧场 · 今日说法",
     "hot": true
@@ -257,10 +257,10 @@ window.TV_CHANNELS = [
     "categoryName": "央视频道",
     "badge": "1080P 50FPS",
     "logo": "https://live.fanmingming.com/tv/CCTV13.png",
-    "streamUrl": "http://61.136.172.236:9901/tsfile/live/0013_1.m3u8",
+    "streamUrl": "https://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8",
     "streamUrls": [
-      "http://61.136.172.236:9901/tsfile/live/0013_1.m3u8",
-      "http://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8"
+      "https://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8",
+      "http://61.136.172.236:9901/tsfile/live/0013_1.m3u8"
     ],
     "epg": "朝闻天下 · 共同关注 · 24小时现场直播",
     "hot": true

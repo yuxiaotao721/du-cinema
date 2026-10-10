@@ -887,11 +887,19 @@ class DuCinemaApp {
     this.playLiveStream(channel, 0);
   }
 
-  getProxiedLiveUrl(url) {
-    if (!url) return '';
-    if (url.startsWith('/api/live')) return url;
-    // 经同源实时流代理中继：100% 消除 Mixed Content 混合内容拦截与 CORS 跨域限制
-    return `/api/live?url=${encodeURIComponent(url)}`;
+  getPlayableLiveUrl(rawUrl) {
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('/api/live')) return rawUrl;
+
+    // 智能双轨内核：
+    // 1. 如果源本身是 HTTPS 协议（如蓝天下各大台、阿里云/腾讯云 CDN），优先直接直连播放！
+    //    免除代理服务器中转，零中间延迟，在苹果 Safari 和安卓 Chrome/三星浏览器中秒开！
+    if (rawUrl.startsWith('https://')) {
+      return rawUrl;
+    }
+
+    // 2. 如果源为 HTTP，在当前 HTTPS 页面下自动走 /api/live 同源代理中继，彻底阻断 Mixed Content 拦截
+    return `/api/live?url=${encodeURIComponent(rawUrl)}`;
   }
 
   playLiveStream(channel, lineIndex = 0) {
@@ -899,7 +907,7 @@ class DuCinemaApp {
     if (lineIndex >= urls.length) lineIndex = 0;
     this.currentTvLineIndex = lineIndex;
     const rawStreamUrl = urls[lineIndex];
-    const playableUrl = this.getProxiedLiveUrl(rawStreamUrl);
+    const playableUrl = this.getPlayableLiveUrl(rawStreamUrl);
 
     document.getElementById('modal-current-ep').innerText = `正在直播 · ${channel.badge} · 线路 ${lineIndex + 1}/${urls.length} ${lineIndex === 0 ? '(极速优先)' : '(备用稳定)'}`;
     
@@ -953,20 +961,20 @@ class DuCinemaApp {
       }
       if (lineIndex + 1 < urls.length) {
         console.warn(`[LiveWatchdog] Line ${lineIndex + 1} slow (${reason}). Auto-switching to line ${lineIndex + 2}...`);
-        this.showToast(`⚡ 线路 ${lineIndex + 1} 响应稍慢，已为您无缝秒切备用线路 ${lineIndex + 2}`);
+        this.showToast(`⚡ 线路 ${lineIndex + 1} 响应稍慢，已为您秒切备用线路 ${lineIndex + 2}`);
         this.playLiveStream(channel, lineIndex + 1);
       } else {
         loadingOverlay.style.display = 'none';
-        this.showToast('⚠️ 当前信号源所有线路尝试完毕，推荐点击下方「呼叫渡赏」唤醒原生硬解秒播！', 5000);
+        this.showToast('⚠️ 当前所有备用线路均在排队，推荐点击下方「呼叫渡赏」唤醒原生硬解秒播！', 5000);
       }
     };
 
-    // Watchdog: If buffering exceeds 6.5 seconds, automatically switch to next line
+    // Watchdog: If buffering exceeds 4.5 seconds, automatically switch to next line
     this.tvWatchdogTimer = setTimeout(() => {
       if (this.isLiveMode && (video.paused || video.readyState < 2 || video.currentTime === 0)) {
         switchNextLine('Buffering timeout');
       }
-    }, 6500);
+    }, 4500);
 
     const onPlaySuccess = () => {
       if (this.tvWatchdogTimer) {
@@ -978,6 +986,11 @@ class DuCinemaApp {
 
     video.onplaying = onPlaySuccess;
     video.onloadeddata = onPlaySuccess;
+    video.onerror = () => {
+      if (this.isLiveMode) {
+        switchNextLine('Native video element error');
+      }
+    };
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // iOS Safari / Apple WebKit 原生 HLS (iPhone / iPad / Mac Safari)
@@ -992,10 +1005,10 @@ class DuCinemaApp {
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 30,
-        manifestLoadingTimeOut: 6000,
-        manifestLoadingMaxRetry: 2,
-        levelLoadingTimeOut: 6000,
-        fragLoadingTimeOut: 6000
+        manifestLoadingTimeOut: 4500,
+        manifestLoadingMaxRetry: 1,
+        levelLoadingTimeOut: 4500,
+        fragLoadingTimeOut: 4500
       });
       this.hls.loadSource(playableUrl);
       this.hls.attachMedia(video);
