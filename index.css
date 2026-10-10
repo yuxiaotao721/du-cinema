@@ -805,6 +805,25 @@ body {
   font-weight: 600;
 }
 
+.modal-back-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-smooth);
+}
+.modal-back-btn:hover {
+  background: var(--gold-primary);
+  color: #0b0c10;
+}
+
 .modal-close-btn {
   background: rgba(255, 255, 255, 0.08);
   border: none;
@@ -840,6 +859,8 @@ body {
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+}
+
 .player-mode-bar {
   display: flex;
   align-items: center;
@@ -1307,61 +1328,539 @@ body {
 }
 
 /* ==========================================================================
-   Responsive Adaptations (Mobile & iPhone)
+   Responsive Adaptations (Mobile & iPhone Flagship UI)
    ========================================================================== */
-@media (max-width: 960px) {
+
+/* Safe Areas for iOS Notches & Home Indicators */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Tablet & Intermediate Screens */
+@media (max-width: 1024px) {
   .hero-spotlight {
-    padding: 28px;
-    min-height: 360px;
+    padding: 32px;
+    min-height: 340px;
   }
   .spotlight-title {
     font-size: 2.2rem;
   }
-  .modal-body {
-    grid-template-columns: 1fr;
-    max-height: 75vh;
-    overflow-y: auto;
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
   }
-  .playlist-info-stage {
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  .modal-body {
+    grid-template-columns: 1fr 320px;
   }
 }
 
-@media (max-width: 680px) {
+/* Mobile & iPhone Screens (<= 768px) */
+@media (max-width: 768px) {
+  /* Ambient glow reduction for mobile GPU performance */
+  .ambient-glow {
+    opacity: 0.2;
+    filter: blur(80px);
+  }
+  .glow-1 { width: 260px; height: 260px; }
+  .glow-2 { width: 280px; height: 280px; }
+  .glow-3 { display: none; }
+
+  /* Sleek Compact Header */
   .app-header {
-    padding: 10px 14px;
+    padding: 8px 12px 10px;
+    padding-top: max(8px, env(safe-area-inset-top));
   }
   .header-container {
-    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
   }
+
+  /* Brand Logo: Compact */
+  .brand-group {
+    gap: 8px;
+  }
+  .brand-crest {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .sail-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .brand-title {
+    font-size: 1.15rem;
+    gap: 4px;
+  }
+  .brand-sub {
+    font-size: 0.65rem;
+  }
+  .brand-caption {
+    display: none; /* Hide subtitle on mobile to preserve height */
+  }
+
+  /* Header Action Pills */
+  .header-actions {
+    gap: 6px;
+  }
+  .action-btn {
+    padding: 5px 10px;
+    font-size: 0.74rem;
+    border-radius: 99px;
+    gap: 4px;
+  }
+  .action-btn .btn-text {
+    font-size: 0.74rem;
+  }
+
+  /* Category Navigation: Horizontal Swipeable Ribbon */
   .nav-categories {
     order: 3;
     width: 100%;
+    margin-top: 8px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     justify-content: flex-start;
-    padding: 4px;
+    padding: 3px;
+    gap: 4px;
+    border-radius: 99px;
+  }
+  .nav-categories::-webkit-scrollbar {
+    display: none;
   }
   .nav-item {
-    padding: 6px 12px;
-    font-size: 0.82rem;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Search Section */
+  .search-bar-wrap {
+    margin: 8px 0 0;
+    width: 100%;
+  }
+  .search-input-box {
+    padding: 3px 4px 3px 12px;
+    border-radius: 10px;
+  }
+  .search-input-box input {
+    font-size: 16px; /* 16px prevents iOS Safari from automatically zooming into the page */
+    padding: 5px 0;
+  }
+  .search-icon {
+    font-size: 0.95rem;
+    margin-right: 6px;
+  }
+  .search-submit-btn {
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    border-radius: 8px;
     white-space: nowrap;
   }
+
+  /* Hot Search Tags: Single-line smooth scroll */
+  .hot-search-tags {
+    margin-top: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-bottom: 2px;
+    width: 100%;
+  }
+  .hot-search-tags::-webkit-scrollbar {
+    display: none;
+  }
+  .tag-label {
+    white-space: nowrap;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+  }
+  .hot-tag {
+    white-space: nowrap;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Main Container & Hero Spotlight */
+  .main-layout {
+    padding: 10px 10px 40px;
+  }
   .hero-spotlight {
-    padding: 20px;
-    border-radius: var(--radius-lg);
+    min-height: 200px;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    align-items: flex-end;
+  }
+  .spotlight-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    margin-bottom: 4px;
   }
   .spotlight-title {
-    font-size: 1.7rem;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .spotlight-meta {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .meta-tag {
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    border-radius: 4px;
   }
   .spotlight-desc {
-    -webkit-line-clamp: 2;
+    display: none; /* Keep hero clean and compact on phone */
   }
-  .media-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
+  .spotlight-actions {
+    gap: 8px;
   }
-  .dual-engine-bar {
+  .btn-dushang-glow, .btn-web-play {
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+    gap: 6px;
+  }
+
+  /* Catalog Section Header */
+  .section-header {
+    margin-bottom: 10px;
+    gap: 6px;
     flex-direction: column;
+    align-items: flex-start;
+  }
+  .section-title-wrap {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .section-title {
+    font-size: 1.15rem;
+  }
+  .section-counter {
+    font-size: 0.72rem;
+  }
+  .filter-pill-group {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 6px;
+  }
+  .filter-pill {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* 3-Column Native App Poster Grid */
+  .media-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .movie-card {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .movie-card:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+  .card-hover-overlay {
+    display: none !important; /* Disable hover overlay on touch */
+  }
+  .card-poster-wrap {
+    aspect-ratio: 2 / 3;
+    border-radius: 8px 8px 0 0;
+  }
+  .card-badge-top {
+    top: 4px;
+    right: 4px;
+    font-size: 0.58rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .card-badge-bottom {
+    bottom: 4px;
+    left: 4px;
+    font-size: 0.58rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .card-info {
+    padding: 5px 4px 6px;
+  }
+  .card-title {
+    font-size: 0.76rem;
+    line-height: 1.25;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+
+  /* Pagination Bar */
+  .pagination-bar {
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .page-nav-btn {
+    padding: 7px 16px;
+    font-size: 0.8rem;
+  }
+  .page-indicator {
+    font-size: 0.8rem;
+  }
+
+  /* ========================================================================
+     Player Modal (Mobile Fullscreen Cinema Architecture)
+     ======================================================================== */
+  .player-modal {
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .modal-backdrop {
+    display: none;
+  }
+  .modal-container {
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    background: #06070a;
+  }
+  .modal-header {
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    background: #0c0e15;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .modal-back-btn {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #FFF;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .modal-title-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .modal-movie-title {
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .modal-current-ep {
+    font-size: 0.7rem;
+    color: var(--gold-glow);
+    display: block;
+    margin-top: 1px;
+    margin-left: 0;
+  }
+  .modal-close-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  /* Modal Content Body */
+  .modal-body {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    background: #06070a;
+  }
+  .player-stage {
+    padding: 0;
+    gap: 8px;
+    flex-shrink: 0;
+    background: #000;
+    overflow: visible;
+  }
+  .video-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+  }
+  .player-mode-bar {
+    margin: 8px 10px 0;
+    padding: 5px 8px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mode-label {
+    font-size: 0.72rem;
+  }
+  .mode-tab {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  .dual-engine-bar {
+    margin: 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dushang-direct-btn {
+    padding: 9px 12px;
+    gap: 10px;
+    border-radius: 8px;
+  }
+  .btn-sail-badge {
+    font-size: 1.25rem;
+  }
+  .btn-text-content .main-label {
+    font-size: 0.8rem;
+  }
+  .btn-text-content .sub-label {
+    font-size: 0.65rem;
+  }
+  .copy-stream-btn {
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+  }
+
+  /* Episodes & Details Stage */
+  .playlist-info-stage {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #080a10;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    flex: 1;
+  }
+  .episodes-panel {
+    padding: 10px 10px;
+  }
+  .panel-headline {
+    margin-bottom: 8px;
+  }
+  .headline-title {
+    font-size: 0.84rem;
+  }
+  .headline-count {
+    font-size: 0.7rem;
+  }
+
+  /* 5-Column Episode Touch Grid */
+  .episodes-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 6px;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+  .ep-btn {
+    min-height: 38px;
+    padding: 8px 2px;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  .synopsis-panel {
+    padding: 10px 12px;
+    font-size: 0.74rem;
+  }
+  .meta-row {
+    margin-bottom: 4px;
+  }
+  .synopsis-text {
+    max-height: none;
+    font-size: 0.74rem;
+  }
+
+  /* ========================================================================
+     API & Source Modals (Mobile Bottom-Sheet Pattern)
+     ======================================================================== */
+  .api-modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .api-modal-card {
+    border-radius: 18px 18px 0 0;
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 85dvh;
+    overflow-y: auto;
+    padding: 20px 14px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    margin: 0;
+  }
+  .api-title-group h3 {
+    font-size: 1.15rem;
+  }
+  .source-card {
+    padding: 10px 12px;
+  }
+  .src-icon {
+    font-size: 1.3rem;
+  }
+  .src-title {
+    font-size: 0.85rem;
+  }
+  .src-desc {
+    font-size: 0.7rem;
   }
 }
+

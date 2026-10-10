@@ -78,6 +78,7 @@
       </div>
       <div class="hot-search-tags" id="hot-tags">
         <span class="tag-label">🔥 热搜速达：</span>
+        <span class="hot-tag" data-kw="请回答1988">请回答1988</span>
         <span class="hot-tag" data-kw="流浪地球">流浪地球</span>
         <span class="hot-tag" data-kw="三体">三体</span>
         <span class="hot-tag" data-kw="庆余年">庆余年</span>
@@ -164,6 +165,10 @@
     <div class="modal-container">
       <!-- Modal Top Bar -->
       <div class="modal-header">
+        <button class="modal-back-btn" id="modal-back-btn" onclick="app.closeModal()" title="返回影院">
+          <span class="back-icon">←</span>
+          <span class="back-text">返回</span>
+        </button>
         <div class="modal-title-info">
           <h3 class="modal-movie-title" id="modal-movie-title">电影标题</h3>
           <span class="modal-current-ep" id="modal-current-ep">正在播放：第01集</span>
