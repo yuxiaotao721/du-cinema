@@ -1,11 +1,20 @@
-export default async function handler(req, res) {
-  // Global CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export const config = {
+  runtime: 'edge',
+};
 
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+export default async function handler(request) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   const SOURCES = {
@@ -15,27 +24,20 @@ export default async function handler(req, res) {
     'xinlang': 'https://api.xinlangapi.com/xinlangapi.php/provide/vod/'
   };
 
-  const parsedUrl = new URL(req.url, `https://${req.headers.host || 'localhost'}`);
-  const q = req.query || {};
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
+  const sourceKey = searchParams.get('source') || 'guangsu';
+  const upstream = SOURCES[sourceKey] || SOURCES['guangsu'];
+  searchParams.delete('source');
 
-  const ac = parsedUrl.searchParams.get('ac') || q.ac || 'detail';
-  const wd = parsedUrl.searchParams.get('wd') || q.wd || '';
-  const t = parsedUrl.searchParams.get('t') || q.t || '';
-  const pg = parsedUrl.searchParams.get('pg') || q.pg || '1';
-  const source = parsedUrl.searchParams.get('source') || q.source || 'guangsu';
-
-  const upstream = SOURCES[source] || SOURCES['guangsu'];
-
-  const params = new URLSearchParams();
-  params.set('ac', ac);
-  if (wd) params.set('wd', wd);
-  if (t) params.set('t', t);
-  if (pg) params.set('pg', pg);
+  if (!searchParams.has('ac')) {
+    searchParams.set('ac', 'detail');
+  }
 
   try {
-    const upstreamRes = await fetch(`${upstream}?${params.toString()}`, {
+    const upstreamRes = await fetch(`${upstream}?${searchParams.toString()}`, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuCinema-Vercel/1.0'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuCinema-Edge/1.0'
       }
     });
 
@@ -43,16 +45,27 @@ export default async function handler(req, res) {
       throw new Error(`Upstream returned ${upstreamRes.status}`);
     }
 
-    const data = await upstreamRes.json();
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-    return res.status(200).json(data);
+    const data = await upstreamRes.text();
+    return new Response(data, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=120'
+      }
+    });
   } catch (err) {
-    return res.status(502).json({
+    return new Response(JSON.stringify({
       code: 0,
       msg: 'Upstream gateway error',
       error: err.message,
       list: []
+    }), {
+      status: 502,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json; charset=utf-8'
+      }
     });
   }
 }

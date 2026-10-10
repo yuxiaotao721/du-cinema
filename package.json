@@ -2,5 +2,8 @@
   "name": "du-cinema",
   "version": "1.0.0",
   "description": "渡影 (DuCinema) - 渡赏专属云端片库与流媒体聚合影院",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/server.js"
+  }
 }

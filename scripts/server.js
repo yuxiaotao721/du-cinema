@@ -82,10 +82,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Static File Serving
-  let filePath = path.join(__dirname, reqUrl.pathname === '/' ? 'index.html' : reqUrl.pathname);
+  const ROOT_DIR = path.join(__dirname, '..');
+  let filePath = path.join(ROOT_DIR, reqUrl.pathname === '/' ? 'index.html' : reqUrl.pathname);
   
   // Normalize & prevent path traversal
-  if (!filePath.startsWith(__dirname)) {
+  if (!filePath.startsWith(ROOT_DIR)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
@@ -94,7 +95,7 @@ const server = http.createServer(async (req, res) => {
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       // Fallback to index.html for SPA-style routing if file not found
-      filePath = path.join(__dirname, 'index.html');
+      filePath = path.join(ROOT_DIR, 'index.html');
     }
 
     const ext = path.extname(filePath).toLowerCase();
