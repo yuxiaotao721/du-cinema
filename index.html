@@ -69,6 +69,10 @@
         <button class="nav-item" data-type="2" id="nav-tv">📺 热门剧集</button>
         <button class="nav-item" data-type="4" id="nav-anime">⛩️ 动漫视界</button>
         <button class="nav-item" data-type="3" id="nav-variety">🎤 顶流综艺</button>
+        <button class="nav-item nav-live-item" data-type="live" id="nav-live">
+          <span class="live-dot-pulse"></span>
+          <span>📡 电视直播</span>
+        </button>
       </nav>
 
       <!-- Header Action Buttons -->
@@ -171,6 +175,32 @@
         <button class="page-nav-btn" id="prev-page" disabled>上一页</button>
         <span class="page-indicator" id="page-indicator">第 1 页</span>
         <button class="page-nav-btn" id="next-page">下一页</button>
+      </div>
+    </section>
+
+    <!-- Live TV Broadcast Section -->
+    <section class="live-tv-section" id="live-tv-section" style="display: none;">
+      <div class="live-tv-header">
+        <div class="live-tv-title-group">
+          <div class="live-badge-glow">
+            <span class="live-dot-pulse"></span>
+            <span>24H 全球卫星实况高清直播</span>
+          </div>
+          <h2 class="live-tv-title">央视卫视与全球经典电视频道</h2>
+          <p class="live-tv-sub">内置 1080P/4K 原画高码率流 · 零广告秒切台 · 支持「渡赏」GPU 硬解与画中画悬浮播放</p>
+        </div>
+        <div class="live-tv-filters" id="live-tv-filters">
+          <button class="live-cat-pill active" data-tvcat="all">🌟 全部频道 (<span id="count-all">0</span>)</button>
+          <button class="live-cat-pill" data-tvcat="cctv">🔴 央视专区 (<span id="count-cctv">0</span>)</button>
+          <button class="live-cat-pill" data-tvcat="satellite">🟡 各省卫视 (<span id="count-satellite">0</span>)</button>
+          <button class="live-cat-pill" data-tvcat="sports">⚽ 体育赛事 (<span id="count-sports">0</span>)</button>
+          <button class="live-cat-pill" data-tvcat="intl_all">🌐 港澳台与国际 (<span id="count-intl">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Live Channel Grid -->
+      <div class="live-channel-grid" id="live-channel-grid">
+        <!-- Rendered dynamically by app.js -->
       </div>
     </section>
   </main>
@@ -367,7 +397,9 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- TV Channels Dataset -->
+  <script src="js/tv-channels.js?v=2.3"></script>
   <!-- App Main Logic -->
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/app.js?v=2.3"></script>
 </body>
 </html>

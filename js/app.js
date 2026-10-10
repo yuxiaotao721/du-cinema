@@ -16,6 +16,9 @@ class DuCinemaApp {
     this.currentYear = '';
     this.currentKeyword = '';
     this.playerMode = 'iframe'; // 'iframe' or 'hls'
+    this.currentTvCat = 'all';
+    this.currentLiveChannel = null;
+    this.isLiveMode = false;
     
     this.currentSource = 'guangsu';
     this.sourceInfo = {
@@ -54,6 +57,7 @@ class DuCinemaApp {
   init() {
     this.bindEvents();
     this.updateApiUrlDisplay();
+    this.initLiveTv();
     this.loadCatalog();
   }
 
@@ -64,7 +68,13 @@ class DuCinemaApp {
       item.addEventListener('click', () => {
         navItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-        this.currentType = item.dataset.type || '';
+        const type = item.dataset.type || '';
+        if (type === 'live') {
+          this.showLiveTvView();
+          return;
+        }
+        this.showMovieView();
+        this.currentType = type;
         this.currentKeyword = '';
         this.currentPage = 1;
         document.getElementById('search-input').value = '';
@@ -591,14 +601,20 @@ class DuCinemaApp {
   }
 
   invokeDuShangPlayer() {
-    if (!this.currentMovie || !this.currentEpisodes || !this.currentEpisodes[this.currentEpIndex]) {
-      this.showToast('⚠️ 未选定播放剧集');
+    let streamUrl = '';
+    let title = '';
+
+    if (this.isLiveMode && this.currentLiveChannel) {
+      streamUrl = this.currentLiveChannel.streamUrl;
+      title = `[电视直播] ${this.currentLiveChannel.name}`;
+    } else if (this.currentMovie && this.currentEpisodes && this.currentEpisodes[this.currentEpIndex]) {
+      const ep = this.currentEpisodes[this.currentEpIndex];
+      streamUrl = ep.m3u8Url;
+      title = `${this.currentMovie.vod_name} - ${ep.name}`;
+    } else {
+      this.showToast('⚠️ 未选定播放节目');
       return;
     }
-
-    const ep = this.currentEpisodes[this.currentEpIndex];
-    const streamUrl = ep.m3u8Url;
-    const title = `${this.currentMovie.vod_name} - ${ep.name}`;
 
     // 1. Automatically copy high-def m3u8 direct URL to clipboard
     navigator.clipboard.writeText(streamUrl).catch(() => {});
@@ -631,8 +647,13 @@ class DuCinemaApp {
 
 
   copyCurrentStreamUrl() {
-    if (!this.currentEpisodes || !this.currentEpisodes[this.currentEpIndex]) return;
-    const url = this.currentEpisodes[this.currentEpIndex].m3u8Url;
+    let url = '';
+    if (this.isLiveMode && this.currentLiveChannel) {
+      url = this.currentLiveChannel.streamUrl;
+    } else if (this.currentEpisodes && this.currentEpisodes[this.currentEpIndex]) {
+      url = this.currentEpisodes[this.currentEpIndex].m3u8Url;
+    }
+    if (!url) return;
     navigator.clipboard.writeText(url).then(() => {
       this.showToast('📋 m3u8 高清直链已复制！可在渡赏或任何外部播放器粘贴播放。');
     });
@@ -655,6 +676,9 @@ class DuCinemaApp {
       this.hls.destroy();
       this.hls = null;
     }
+    this.isLiveMode = false;
+    const epGrid = document.getElementById('episodes-grid');
+    if (epGrid) epGrid.className = 'episodes-grid';
   }
 
   closeApiModal() {
@@ -674,6 +698,228 @@ class DuCinemaApp {
       toast.style.transition = 'all 0.3s ease';
       setTimeout(() => toast.remove(), 300);
     }, duration);
+  }
+
+  // =========================================================================
+  // 📡 Live TV Broadcast System
+  // =========================================================================
+
+  initLiveTv() {
+    const channels = window.TV_CHANNELS || [];
+    
+    // Calculate counts
+    const countAll = channels.length;
+    const countCctv = channels.filter(c => c.category === 'cctv').length;
+    const countSat = channels.filter(c => c.category === 'satellite').length;
+    const countSports = channels.filter(c => c.category === 'sports').length;
+    const countIntl = channels.filter(c => c.category === 'gangaotai' || c.category === 'intl').length;
+
+    const elAll = document.getElementById('count-all');
+    if (elAll) elAll.innerText = countAll;
+    const elCctv = document.getElementById('count-cctv');
+    if (elCctv) elCctv.innerText = countCctv;
+    const elSat = document.getElementById('count-satellite');
+    if (elSat) elSat.innerText = countSat;
+    const elSports = document.getElementById('count-sports');
+    if (elSports) elSports.innerText = countSports;
+    const elIntl = document.getElementById('count-intl');
+    if (elIntl) elIntl.innerText = countIntl;
+
+    // Filter pills
+    document.querySelectorAll('.live-cat-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.live-cat-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        this.currentTvCat = pill.dataset.tvcat || 'all';
+        this.renderLiveChannels(this.currentTvCat);
+      });
+    });
+
+    this.renderLiveChannels('all');
+  }
+
+  renderLiveChannels(filterCat = 'all') {
+    const grid = document.getElementById('live-channel-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    let list = window.TV_CHANNELS || [];
+    if (filterCat === 'cctv') {
+      list = list.filter(c => c.category === 'cctv');
+    } else if (filterCat === 'satellite') {
+      list = list.filter(c => c.category === 'satellite');
+    } else if (filterCat === 'sports') {
+      list = list.filter(c => c.category === 'sports');
+    } else if (filterCat === 'intl_all') {
+      list = list.filter(c => c.category === 'gangaotai' || c.category === 'intl');
+    }
+
+    list.forEach(ch => {
+      const card = document.createElement('div');
+      card.className = 'channel-card';
+      card.innerHTML = `
+        <div class="channel-card-top">
+          <div class="channel-logo-wrap">
+            <img class="channel-logo-img" src="${ch.logo}" alt="${ch.name}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=\\"channel-logo-fallback\\">📺</span>';">
+          </div>
+          <div class="channel-meta-wrap">
+            <h4 class="channel-title" title="${ch.name}">${ch.name}</h4>
+            <div class="channel-tags-row">
+              <span class="channel-badge-res">${ch.badge}</span>
+              <span class="channel-badge-cat">${ch.categoryName}</span>
+              <span class="live-badge-glow" style="padding: 1px 6px; font-size: 0.65rem;">
+                <span class="live-dot-pulse" style="width: 5px; height: 5px;"></span> LIVE
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="channel-epg-box">
+          <span class="epg-icon">📻</span>
+          <span class="epg-content" title="${ch.epg}">${ch.epg}</span>
+        </div>
+        <div class="channel-card-actions">
+          <button class="btn-tv-web" title="在网页原生播放">▶ 网页直播</button>
+          <button class="btn-tv-dushang" title="唤醒渡赏原生 60FPS 硬解与画中画">⛵ 渡赏硬解</button>
+        </div>
+      `;
+
+      // Actions
+      card.querySelector('.btn-tv-web').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openLiveTvPlayer(ch);
+      });
+      card.querySelector('.btn-tv-dushang').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.currentLiveChannel = ch;
+        this.isLiveMode = true;
+        this.invokeDuShangPlayer();
+      });
+      card.addEventListener('click', () => {
+        this.openLiveTvPlayer(ch);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  openLiveTvPlayer(channel) {
+    this.isLiveMode = true;
+    this.currentLiveChannel = channel;
+    this.currentMovie = null;
+
+    const modal = document.getElementById('player-modal');
+    const titleEl = document.getElementById('modal-movie-title');
+    const epCountBadge = document.getElementById('ep-count-badge');
+    const epGrid = document.getElementById('episodes-grid');
+    
+    document.getElementById('meta-category').innerText = channel.categoryName || '电视直播';
+    document.getElementById('meta-year').innerText = channel.badge || '1080P';
+    document.getElementById('meta-actor').innerText = '卫星实时广播 / 原画无损';
+    document.getElementById('meta-plot').innerText = `正在播放：${channel.name}。当前节目排期：${channel.epg || '精彩节目全天候滚动直播'}。支持使用渡赏 60fps 硬解与系统画中画浮窗播放。`;
+
+    titleEl.innerHTML = `<span class="live-dot-pulse" style="margin-right: 6px;"></span>[直播] ${channel.name}`;
+    epCountBadge.innerText = `快速换台 (${(window.TV_CHANNELS || []).length} 台)`;
+
+    // Render quick switcher in episodes-grid
+    epGrid.innerHTML = '';
+    epGrid.className = 'tv-quick-panel';
+    const channels = window.TV_CHANNELS || [];
+    channels.forEach(ch => {
+      const item = document.createElement('div');
+      item.className = `tv-quick-item ${ch.id === channel.id ? 'active' : ''}`;
+      item.innerHTML = `
+        <span class="tv-quick-name">${ch.name}</span>
+        <span class="channel-badge-res">${ch.badge}</span>
+      `;
+      item.addEventListener('click', () => {
+        this.openLiveTvPlayer(ch);
+      });
+      epGrid.appendChild(item);
+    });
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Play TV live stream using HLS native mode
+    this.setPlayerMode('hls');
+    this.playLiveStream(channel);
+  }
+
+  playLiveStream(channel) {
+    document.getElementById('modal-current-ep').innerText = `正在直播 · ${channel.badge} · 零缓冲秒开`;
+    const video = this.videoEl;
+    const iframe = this.iframeEl;
+    const loadingOverlay = document.getElementById('player-loading');
+
+    iframe.style.display = 'none';
+    iframe.src = 'about:blank';
+    video.style.display = 'block';
+    loadingOverlay.style.display = 'flex';
+
+    if (this.hls) {
+      this.hls.destroy();
+      this.hls = null;
+    }
+
+    const streamUrl = channel.streamUrl;
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // iOS Safari native HLS
+      video.src = streamUrl;
+      video.addEventListener('loadedmetadata', () => {
+        loadingOverlay.style.display = 'none';
+        video.play().catch(() => {});
+      }, { once: true });
+    } else if (window.Hls && Hls.isSupported()) {
+      // HLS.js for Chrome / PC Edge / Android
+      this.hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30
+      });
+      this.hls.loadSource(streamUrl);
+      this.hls.attachMedia(video);
+
+      this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        loadingOverlay.style.display = 'none';
+        video.play().catch(() => {});
+      });
+
+      this.hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          loadingOverlay.style.display = 'none';
+          this.showToast('⚠️ 当前电台信号切换中，建议点击「呼叫渡赏硬解播放」直连原生硬解');
+        }
+      });
+    } else {
+      video.src = streamUrl;
+      loadingOverlay.style.display = 'none';
+      video.play().catch(() => {});
+    }
+  }
+
+  showLiveTvView() {
+    const hero = document.getElementById('hero-spotlight');
+    const catalog = document.getElementById('catalog-section');
+    const liveSection = document.getElementById('live-tv-section');
+    
+    if (hero) hero.style.display = 'none';
+    if (catalog) catalog.style.display = 'none';
+    if (liveSection) {
+      liveSection.style.display = 'block';
+      liveSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    this.renderLiveChannels(this.currentTvCat);
+  }
+
+  showMovieView() {
+    const hero = document.getElementById('hero-spotlight');
+    const catalog = document.getElementById('catalog-section');
+    const liveSection = document.getElementById('live-tv-section');
+
+    if (hero) hero.style.display = 'block';
+    if (catalog) catalog.style.display = 'block';
+    if (liveSection) liveSection.style.display = 'none';
   }
 }
 
