@@ -625,19 +625,9 @@ class DuCinemaApp {
     const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (isAndroid) {
-      this.showToast('🚀 已复制超清直链！正在直连唤醒「渡赏」原生硬解播放器...');
-      
-      const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
-      // 深度专属 Intent：精准直达渡赏 (dev.yxt.ferrygram)，无需安装第三方播放器
+      this.showToast('🚀 正在直连唤醒「渡赏」原生硬解播放器...');
       const dushangIntent = `intent://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}#Intent;scheme=dushang;package=dev.yxt.ferrygram;action=android.intent.action.VIEW;end`;
-
-      const tempLink = document.createElement('a');
-      tempLink.href = dushangScheme;
-      tempLink.click();
-
-      setTimeout(() => {
-        window.location.href = dushangIntent;
-      }, 200);
+      window.location.href = dushangIntent;
     } else {
       const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
       this.showToast('🚀 超清直链已复制！正在呼叫渡赏播放器...');
@@ -760,7 +750,8 @@ class DuCinemaApp {
       card.innerHTML = `
         <div class="channel-card-top">
           <div class="channel-logo-wrap">
-            <img class="channel-logo-img" src="${ch.logo}" alt="${ch.name}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=\\"channel-logo-fallback\\">📺</span>';">
+            <img class="channel-logo-img" src="${ch.logo}" alt="${ch.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="channel-logo-fallback" style="display: none;">📺</span>
           </div>
           <div class="channel-meta-wrap">
             <h4 class="channel-title" title="${ch.name}">${ch.name}</h4>
