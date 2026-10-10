@@ -600,13 +600,36 @@ class DuCinemaApp {
     const streamUrl = ep.m3u8Url;
     const title = `${this.currentMovie.vod_name} - ${ep.name}`;
 
-    const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
-
-    this.showToast('🚀 正在通过 dushang:// 协议唤醒「渡赏」硬解放映...');
-
-    window.location.href = dushangScheme;
+    // 1. Automatically copy high-def m3u8 direct URL to clipboard
     navigator.clipboard.writeText(streamUrl).catch(() => {});
+
+    // 2. Pause internal web player so it doesn't play in background
+    if (this.videoEl) this.videoEl.pause();
+
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isAndroid) {
+      this.showToast('🚀 已复制超清直链！正在唤醒渡赏 / 外部硬解播放器...');
+      
+      // Standard Android Intent to invoke external video player
+      const androidIntent = `intent:${streamUrl}#Intent;action=android.intent.action.VIEW;type=video/*;end`;
+      const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
+
+      // Attempt custom scheme first, then Android intent
+      const tempLink = document.createElement('a');
+      tempLink.href = dushangScheme;
+      tempLink.click();
+
+      setTimeout(() => {
+        window.location.href = androidIntent;
+      }, 300);
+    } else {
+      const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
+      this.showToast('🚀 超清直链已复制！正在呼叫渡赏播放器...');
+      window.location.href = dushangScheme;
+    }
   }
+
 
   copyCurrentStreamUrl() {
     if (!this.currentEpisodes || !this.currentEpisodes[this.currentEpIndex]) return;

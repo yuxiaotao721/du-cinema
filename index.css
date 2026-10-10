@@ -1375,6 +1375,7 @@ body {
   }
   .header-container {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -1383,7 +1384,10 @@ body {
 
   /* Brand Logo: Compact */
   .brand-group {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    flex-shrink: 0;
   }
   .brand-crest {
     width: 32px;
@@ -1407,22 +1411,29 @@ body {
 
   /* Header Action Pills */
   .header-actions {
+    display: flex;
+    align-items: center;
     gap: 6px;
+    flex-shrink: 0;
   }
   .action-btn {
-    padding: 5px 10px;
+    padding: 6px 10px;
     font-size: 0.74rem;
     border-radius: 99px;
     gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .action-btn .btn-text {
     font-size: 0.74rem;
+    white-space: nowrap;
   }
 
   /* Category Navigation: Horizontal Swipeable Ribbon */
   .nav-categories {
     order: 3;
     width: 100%;
+    flex-basis: 100%;
     margin-top: 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;

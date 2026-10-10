@@ -1,0 +1,21 @@
+{
+  "name": "渡影 DuCinema",
+  "short_name": "渡影",
+  "description": "渡赏专属云端片库与流媒体聚合影院",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#06070a",
+  "theme_color": "#08090d",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
