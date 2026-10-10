@@ -558,8 +558,11 @@ class DuCinemaApp {
     if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
       this.hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90
+        lowLatencyMode: false, // 电影点播需关闭低延迟模式，开启深度缓冲防卡顿
+        backBufferLength: 120, // 往回倒退保留 2 分钟缓冲
+        maxBufferLength: 60,   // 向前激进预加载 60 秒数据
+        maxMaxBufferLength: 180,
+        maxBufferSize: 80 * 1024 * 1024 // 允许 80MB 内存高速预读
       });
       this.hls.loadSource(streamUrl);
       this.hls.attachMedia(video);
