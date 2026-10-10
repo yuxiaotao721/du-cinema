@@ -609,20 +609,19 @@ class DuCinemaApp {
     const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (isAndroid) {
-      this.showToast('🚀 已复制超清直链！正在唤醒渡赏 / 外部硬解播放器...');
+      this.showToast('🚀 已复制超清直链！正在直连唤醒「渡赏」原生硬解播放器...');
       
-      // Standard Android Intent to invoke external video player
-      const androidIntent = `intent:${streamUrl}#Intent;action=android.intent.action.VIEW;type=video/*;end`;
       const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
+      // 深度专属 Intent：精准直达渡赏 (dev.yxt.ferrygram)，无需安装第三方播放器
+      const dushangIntent = `intent://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}#Intent;scheme=dushang;package=dev.yxt.ferrygram;action=android.intent.action.VIEW;end`;
 
-      // Attempt custom scheme first, then Android intent
       const tempLink = document.createElement('a');
       tempLink.href = dushangScheme;
       tempLink.click();
 
       setTimeout(() => {
-        window.location.href = androidIntent;
-      }, 300);
+        window.location.href = dushangIntent;
+      }, 200);
     } else {
       const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
       this.showToast('🚀 超清直链已复制！正在呼叫渡赏播放器...');
