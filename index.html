@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>渡影 (DuCinema) - 渡赏专属云端片库与流媒体聚合影院</title>
+  <meta name="description" content="渡影 (DuCinema) 是渡赏 (DuShang) 专属云端片库。支持苹果 iOS 网页流畅直放，支持安卓 DuOS 一键深度唤醒「渡赏」硬件解码引擎，全网影视即搜即播。">
+  <meta name="theme-color" content="#08090d">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- HLS.js for web streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Ambient Background Atmosphere -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- App Header -->
+  <header class="app-header" id="main-header">
+    <div class="header-container">
+      <!-- Brand Logo -->
+      <div class="brand-group" id="brand-logo" onclick="app.resetHome()">
+        <div class="brand-crest">
+          <svg class="sail-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 2L4 26H32L18 2Z" fill="url(#goldGradient)" fill-opacity="0.9" />
+            <path d="M18 2V26M18 26L26 34M18 26L10 34" stroke="#FFF" stroke-width="2" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="goldGradient" x1="4" y1="2" x2="32" y2="34" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#FFD700" />
+                <stop offset="0.5" stop-color="#D4AF37" />
+                <stop offset="1" stop-color="#AA771C" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="crest-shine"></div>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">渡影 <span class="brand-sub">DuCinema</span></div>
+          <div class="brand-caption">渡赏专属云端片库 · 自由视界</div>
+        </div>
+      </div>
+
+      <!-- Navigation Categories -->
+      <nav class="nav-categories" id="nav-categories">
+        <button class="nav-item active" data-type="" id="nav-all">🌟 全部精选</button>
+        <button class="nav-item" data-type="1" id="nav-movie">🎬 电影原盘</button>
+        <button class="nav-item" data-type="2" id="nav-tv">📺 热门剧集</button>
+        <button class="nav-item" data-type="4" id="nav-anime">⛩️ 动漫视界</button>
+        <button class="nav-item" data-type="3" id="nav-variety">🎤 顶流综艺</button>
+      </nav>
+
+      <!-- Header Action Buttons -->
+      <div class="header-actions">
+        <button class="action-btn api-btn" id="btn-api-modal" title="查看并复制渡赏 App 专属片库订阅接口">
+          <span class="btn-icon">📡</span>
+          <span class="btn-text">渡赏片库 API</span>
+        </button>
+        <button class="action-btn source-btn" id="btn-source-switch" title="切换公共影视加速节点">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">主线极速源</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-bar-wrap">
+      <div class="search-input-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="输入电影名、电视剧、主角（如：流浪地球、三体、繁花）..." autocomplete="off">
+        <button class="search-clear-btn" id="search-clear" style="display: none;">✕</button>
+        <button class="search-submit-btn" id="search-submit">即搜即播</button>
+      </div>
+      <div class="hot-search-tags" id="hot-tags">
+        <span class="tag-label">🔥 热搜速达：</span>
+        <span class="hot-tag" data-kw="流浪地球">流浪地球</span>
+        <span class="hot-tag" data-kw="三体">三体</span>
+        <span class="hot-tag" data-kw="庆余年">庆余年</span>
+        <span class="hot-tag" data-kw="繁花">繁花</span>
+        <span class="hot-tag" data-kw="名侦探柯南">柯南</span>
+        <span class="hot-tag" data-kw="肖申克的救赎">肖申克的救赎</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="main-layout" id="main-content">
+    
+    <!-- Hero Spotlight Showcase -->
+    <section class="hero-spotlight" id="hero-spotlight">
+      <div class="spotlight-backdrop" id="hero-backdrop"></div>
+      <div class="spotlight-overlay"></div>
+      <div class="spotlight-content">
+        <div class="spotlight-badge" id="hero-badge">🌟 渡影重磅推荐 · 4K 蓝光流</div>
+        <h1 class="spotlight-title" id="hero-title">流浪地球 2</h1>
+        <div class="spotlight-meta" id="hero-meta">
+          <span class="meta-tag gold-tag">豆瓣 8.3</span>
+          <span class="meta-tag">科幻 / 冒险 / 灾难</span>
+          <span class="meta-tag">2023 · 中国大陆</span>
+          <span class="meta-tag">超清原盘 m3u8</span>
+        </div>
+        <p class="spotlight-desc" id="hero-desc">
+          太阳即将毁灭，人类在地球表面建造出巨大的推进器，寻找新家园。然而宇宙之路危机四伏，为了拯救地球，流浪地球时代的年轻人再次挺身而出，展开争分夺秒的生死之战...
+        </p>
+        <div class="spotlight-actions">
+          <button class="btn-dushang-glow" id="hero-play-dushang">
+            <span class="btn-icon">🎬</span>
+            <span class="btn-text">呼叫「渡赏」硬解播放</span>
+          </button>
+          <button class="btn-web-play" id="hero-play-web">
+            <span class="btn-icon">🍎</span>
+            <span class="btn-text">苹果 / 网页直接播放</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Catalog Section -->
+    <section class="catalog-section" id="catalog-section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <h2 class="section-title" id="section-title">全网热播资源</h2>
+          <span class="section-counter" id="item-counter">正在全速拉取云端流...</span>
+        </div>
+        <div class="section-controls">
+          <div class="filter-pill-group" id="filter-years">
+            <button class="filter-pill active" data-year="">全部年份</button>
+            <button class="filter-pill" data-year="2026">2026</button>
+            <button class="filter-pill" data-year="2025">2025</button>
+            <button class="filter-pill" data-year="2024">2024</button>
+            <button class="filter-pill" data-year="2023">2023</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Grid -->
+      <div class="media-grid" id="media-grid">
+        <!-- Rendered by app.js -->
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <!-- Pagination / Load More -->
+      <div class="pagination-bar" id="pagination-bar">
+        <button class="page-nav-btn" id="prev-page" disabled>上一页</button>
+        <span class="page-indicator" id="page-indicator">第 1 页</span>
+        <button class="page-nav-btn" id="next-page">下一页</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Floating Cinematic Player & Detail Modal -->
+  <div class="player-modal" id="player-modal">
+    <div class="modal-backdrop" id="modal-backdrop" onclick="app.closeModal()"></div>
+    <div class="modal-container">
+      <!-- Modal Top Bar -->
+      <div class="modal-header">
+        <div class="modal-title-info">
+          <h3 class="modal-movie-title" id="modal-movie-title">电影标题</h3>
+          <span class="modal-current-ep" id="modal-current-ep">正在播放：第01集</span>
+        </div>
+        <button class="modal-close-btn" id="modal-close" onclick="app.closeModal()">✕</button>
+      </div>
+
+      <!-- Modal Body (Split Layout: Player Stage & Episodes Panel) -->
+      <div class="modal-body">
+        
+        <!-- Left: Video Player Stage -->
+        <div class="player-stage">
+          <div class="video-container" id="video-container">
+            <video id="html5-player" playsinline webkit-playsinline controls preload="auto"></video>
+            <div class="player-loading-overlay" id="player-loading" style="display: none;">
+              <div class="spinner"></div>
+              <span>🎬 正在缓冲高清切片...</span>
+            </div>
+          </div>
+
+          <!-- Dual Engine Trigger Bar -->
+          <div class="dual-engine-bar">
+            <!-- DuShang Deep Link Button -->
+            <button class="dushang-direct-btn" id="modal-dushang-btn" title="唤醒安卓 DuOS 渡赏播放器进行 4K 60帧 GPU 硬解">
+              <span class="btn-sail-badge">⛵ 渡</span>
+              <div class="btn-text-content">
+                <div class="main-label">呼叫「渡赏」硬解播放 (安卓 / DuOS)</div>
+                <div class="sub-label">跑车涡轮极速缓冲 · 无损全景声 · 进度记忆</div>
+              </div>
+            </button>
+
+            <!-- Copy Direct Link Button -->
+            <button class="copy-stream-btn" id="modal-copy-btn" title="复制当前剧集 m3u8 高清直链">
+              <span>📋 复制直链</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Episodes & Movie Synopsis Info -->
+        <div class="playlist-info-stage">
+          <!-- Episode Selector -->
+          <div class="episodes-panel">
+            <div class="panel-headline">
+              <span class="headline-title">选集播放列表</span>
+              <span class="headline-count" id="ep-count-badge">共 1 集</span>
+            </div>
+            <div class="episodes-grid" id="episodes-grid">
+              <!-- Rendered by app.js -->
+            </div>
+          </div>
+
+          <!-- Synopsis & Metadata -->
+          <div class="synopsis-panel">
+            <div class="meta-row">
+              <span class="meta-key">分类：</span>
+              <span class="meta-val" id="meta-category">-</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">年份：</span>
+              <span class="meta-val" id="meta-year">-</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">主演：</span>
+              <span class="meta-val" id="meta-actor">-</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">剧情：</span>
+              <p class="synopsis-text" id="meta-plot">暂无剧情简介</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DuShang API Documentation Modal -->
+  <div class="api-modal" id="api-modal">
+    <div class="modal-backdrop" onclick="app.closeApiModal()"></div>
+    <div class="api-modal-card">
+      <div class="api-modal-header">
+        <div class="api-title-group">
+          <span class="api-badge">DU ECOSYSTEM</span>
+          <h3>🎬「渡赏」专属片库订阅接口</h3>
+        </div>
+        <button class="api-close-btn" onclick="app.closeApiModal()">✕</button>
+      </div>
+
+      <div class="api-modal-body">
+        <p class="api-lead">
+          本站内置标准的 <strong>VOD JSON 片库接口</strong>。渡赏 (DuShang) 客户端可通过网络请求直接拉取本站片库，在 App 内生成海报墙与热播榜单。
+        </p>
+
+        <div class="code-box">
+          <div class="code-header">
+            <span>片库标准 API 接口地址</span>
+            <button class="copy-code-btn" id="copy-api-url">复制地址</button>
+          </div>
+          <code id="api-url-text">https://yuxiaotao721.github.io/api/vod</code>
+        </div>
+
+        <div class="api-features">
+          <div class="feature-item">
+            <span class="feat-icon">⚡</span>
+            <div>
+              <strong>全网免流秒解析</strong>
+              <p>原生返回经过清洗的 HLS m3u8 直链与 MP4 原画下载地址。</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <span class="feat-icon">⛵</span>
+            <div>
+              <strong>双向 URL Scheme 唤醒</strong>
+              <p>支持 <code>dushang://play?url={m3u8}&title={name}</code> 协议直达。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App Main Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
