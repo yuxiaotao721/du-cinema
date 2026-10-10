@@ -112,7 +112,7 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🎬 渡影 (DuCinema) 服务已启动: http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎬 渡影 (DuCinema) 服务已启动: http://localhost:${PORT} / http://127.0.0.1:${PORT}`);
   console.log(`📡 渡赏片库 API 接口: http://localhost:${PORT}/api/vod`);
 });

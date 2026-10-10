@@ -2,19 +2,5 @@
   "name": "du-cinema",
   "version": "1.0.0",
   "description": "渡影 (DuCinema) - 渡赏专属云端片库与流媒体聚合影院",
-  "type": "module",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "keywords": [
-    "du-cinema",
-    "dushang",
-    "video-streaming",
-    "vod",
-    "hls"
-  ],
-  "author": "yuxiaotao721",
-  "license": "MIT"
+  "type": "module"
 }
