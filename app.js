@@ -17,6 +17,14 @@ class DuCinemaApp {
     this.currentKeyword = '';
     this.playerMode = 'iframe'; // 'iframe' or 'hls'
     
+    this.currentSource = 'guangsu';
+    this.sourceInfo = {
+      'guangsu': { name: '🌟 光速 1080P 专线', badge: '1080P 推荐', api: 'https://api.guangsuapi.com/api.php/provide/vod/' },
+      'bdzy': { name: '💎 百度 蓝光大片专线', badge: '蓝光原画', api: 'https://api.apibdzy.com/api.php/provide/vod/' },
+      'ffzy': { name: '🚀 非凡 极速秒播专线', badge: '秒播低延', api: 'https://cj.ffzyapi.com/api.php/provide/vod/' },
+      'xinlang': { name: '🎬 新浪 高清全库专线', badge: '综合全库', api: 'https://api.xinlangapi.com/xinlangapi.php/provide/vod/' }
+    };
+    
     this.movies = [];
     this.currentMovie = null;
     this.currentEpisodes = [];
@@ -162,8 +170,41 @@ class DuCinemaApp {
 
     // Source Switch
     document.getElementById('btn-source-switch').addEventListener('click', () => {
-      this.showToast('⚡ 当前已连接「光速极速源」(全球直连免代理、无跨域限制)');
+      this.openSourceModal();
     });
+  }
+
+  openSourceModal() {
+    document.getElementById('source-modal').classList.add('active');
+  }
+
+  closeSourceModal() {
+    document.getElementById('source-modal').classList.remove('active');
+  }
+
+  switchSource(srcKey) {
+    if (!this.sourceInfo[srcKey]) return;
+    this.currentSource = srcKey;
+    
+    // Update active state in source cards
+    document.querySelectorAll('.source-card').forEach(card => {
+      const isMatch = card.dataset.src === srcKey;
+      card.classList.toggle('active', isMatch);
+      const radio = card.querySelector('.src-radio');
+      if (radio) radio.innerText = isMatch ? '✓' : '';
+    });
+
+    // Update header button text
+    const info = this.sourceInfo[srcKey];
+    const sourceBtn = document.getElementById('btn-source-switch');
+    if (sourceBtn) {
+      sourceBtn.innerHTML = `<span class="btn-icon">⚡</span><span class="btn-text">${info.name}</span>`;
+    }
+
+    this.closeSourceModal();
+    this.showToast(`⚡ 已成功切换至「${info.name}」！正在刷新片库...`);
+    this.currentPage = 1;
+    this.loadCatalog();
   }
 
   setPlayerMode(mode) {
@@ -228,7 +269,8 @@ class DuCinemaApp {
 
     const params = new URLSearchParams({
       ac: 'detail',
-      pg: this.currentPage.toString()
+      pg: this.currentPage.toString(),
+      source: this.currentSource
     });
     if (this.currentType) params.set('t', this.currentType);
     if (this.currentKeyword) params.set('wd', this.currentKeyword);
@@ -246,7 +288,8 @@ class DuCinemaApp {
     // Static hosting fallback (e.g. GitHub Pages)
     if (!data || !data.list) {
       try {
-        const upstreamUrl = `https://api.guangsuapi.com/api.php/provide/vod/?${params.toString()}`;
+        const baseUpstream = this.sourceInfo[this.currentSource]?.api || this.sourceInfo['guangsu'].api;
+        const upstreamUrl = `${baseUpstream}?${params.toString()}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(upstreamUrl)}`;
         const fallbackRes = await fetch(proxyUrl);
         if (fallbackRes.ok) {

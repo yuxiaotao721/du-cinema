@@ -8,8 +8,15 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  const { ac = 'detail', wd = '', t = '', pg = '1', ids = '' } = req.query;
-  const upstream = 'https://api.guangsuapi.com/api.php/provide/vod/';
+  const SOURCES = {
+    'guangsu': 'https://api.guangsuapi.com/api.php/provide/vod/',
+    'bdzy': 'https://api.apibdzy.com/api.php/provide/vod/',
+    'ffzy': 'https://cj.ffzyapi.com/api.php/provide/vod/',
+    'xinlang': 'https://api.xinlangapi.com/xinlangapi.php/provide/vod/'
+  };
+
+  const { ac = 'detail', wd = '', t = '', pg = '1', ids = '', source = 'guangsu' } = req.query;
+  const upstream = SOURCES[source] || SOURCES['guangsu'];
 
   const params = new URLSearchParams();
   params.set('ac', ac);

@@ -14,8 +14,18 @@ export async function onRequest(context) {
     });
   }
 
-  const upstream = 'https://api.guangsuapi.com/api.php/provide/vod/';
+  const SOURCES = {
+    'guangsu': 'https://api.guangsuapi.com/api.php/provide/vod/',
+    'bdzy': 'https://api.apibdzy.com/api.php/provide/vod/',
+    'ffzy': 'https://cj.ffzyapi.com/api.php/provide/vod/',
+    'xinlang': 'https://api.xinlangapi.com/xinlangapi.php/provide/vod/'
+  };
+
   const searchParams = url.searchParams;
+  const sourceKey = searchParams.get('source') || 'guangsu';
+  const upstream = SOURCES[sourceKey] || SOURCES['guangsu'];
+  searchParams.delete('source');
+
   if (!searchParams.has('ac')) {
     searchParams.set('ac', 'detail');
   }

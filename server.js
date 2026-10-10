@@ -7,20 +7,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-// 使用无 IP 封锁、全球直连且支持 CORS 的光速超清源
-const UPSTREAM_API = 'https://api.guangsuapi.com/api.php/provide/vod/';
-
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.webp': 'image/webp'
+const SOURCES = {
+  'guangsu': 'https://api.guangsuapi.com/api.php/provide/vod/',
+  'bdzy': 'https://api.apibdzy.com/api.php/provide/vod/',
+  'ffzy': 'https://cj.ffzyapi.com/api.php/provide/vod/',
+  'xinlang': 'https://api.xinlangapi.com/xinlangapi.php/provide/vod/'
 };
 
 const server = http.createServer(async (req, res) => {
@@ -41,12 +32,17 @@ const server = http.createServer(async (req, res) => {
   if (reqUrl.pathname === '/api/vod') {
     try {
       const searchParams = reqUrl.searchParams;
-      // Default to ac=detail if not specified
+      const sourceKey = searchParams.get('source') || 'guangsu';
+      const baseApi = SOURCES[sourceKey] || SOURCES['guangsu'];
+      
+      // Clean internal source param before forwarding to upstream
+      searchParams.delete('source');
+
       if (!searchParams.has('ac')) {
         searchParams.set('ac', 'detail');
       }
 
-      const targetUrl = `${UPSTREAM_API}?${searchParams.toString()}`;
+      const targetUrl = `${baseApi}?${searchParams.toString()}`;
       const response = await fetch(targetUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuCinema/1.0'

@@ -246,6 +246,58 @@
     </div>
   </div>
 
+  <!-- Source Switcher Modal -->
+  <div class="api-modal" id="source-modal">
+    <div class="modal-backdrop" onclick="app.closeSourceModal()"></div>
+    <div class="api-modal-card">
+      <div class="api-modal-header">
+        <div class="api-title-group">
+          <span class="api-badge" style="color: #64B5F6; background: rgba(33, 150, 243, 0.15);">HIGH BITRATE CDN</span>
+          <h3>⚡ 影视数据与超清画质专线</h3>
+        </div>
+        <button class="api-close-btn" onclick="app.closeSourceModal()">✕</button>
+      </div>
+
+      <div class="source-list-group">
+        <div class="source-card active" data-src="guangsu" onclick="app.switchSource('guangsu')">
+          <div class="src-icon">🌟</div>
+          <div class="src-info">
+            <div class="src-title">光速 1080P 蓝光专线 <span class="src-badge-rec">推荐 · 4Mbps</span></div>
+            <div class="src-desc">真 1080P 全高清码率，全球免地域封锁，双模态自适应秒播</div>
+          </div>
+          <div class="src-radio">✓</div>
+        </div>
+
+        <div class="source-card" data-src="bdzy" onclick="app.switchSource('bdzy')">
+          <div class="src-icon">💎</div>
+          <div class="src-info">
+            <div class="src-title">百度 蓝光原画大片专线 <span class="src-badge-new">蓝光大片</span></div>
+            <div class="src-desc">院线新片与经典名作超清原画，独家高清晰度直连切片</div>
+          </div>
+          <div class="src-radio"></div>
+        </div>
+
+        <div class="source-card" data-src="ffzy" onclick="app.switchSource('ffzy')">
+          <div class="src-icon">🚀</div>
+          <div class="src-info">
+            <div class="src-title">非凡 极速秒播专线 <span class="src-badge-fast">极速轻量</span></div>
+            <div class="src-desc">适合移动端弱网环境，超低延迟缓冲，秒开播放</div>
+          </div>
+          <div class="src-radio"></div>
+        </div>
+
+        <div class="source-card" data-src="xinlang" onclick="app.switchSource('xinlang')">
+          <div class="src-icon">🎬</div>
+          <div class="src-info">
+            <div class="src-title">新浪 高清全库专线 <span class="src-badge-all">全网片源</span></div>
+            <div class="src-desc">收录极为全面的全网影视、电视剧与小众冷门文艺片</div>
+          </div>
+          <div class="src-radio"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- DuShang API Documentation Modal -->
   <div class="api-modal" id="api-modal">
     <div class="modal-backdrop" onclick="app.closeApiModal()"></div>
