@@ -61,6 +61,20 @@ class DuCinemaApp {
     this.updateApiUrlDisplay();
     this.initLiveTv();
     this.loadCatalog();
+
+    // Check URL parameters (e.g. ?channel=cctv5 or ?view=live)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetChannelId = urlParams.get('channel') || urlParams.get('ch');
+    const viewParam = urlParams.get('view');
+    if (targetChannelId) {
+      const channel = (window.TV_CHANNELS || []).find(c => c.id === targetChannelId || c.name.toLowerCase().includes(targetChannelId.toLowerCase()));
+      if (channel) {
+        this.showLiveTvView();
+        setTimeout(() => this.openLiveTvPlayer(channel), 150);
+      }
+    } else if (viewParam === 'live') {
+      this.showLiveTvView();
+    }
   }
 
   bindEvents() {
@@ -873,11 +887,19 @@ class DuCinemaApp {
     this.playLiveStream(channel, 0);
   }
 
+  getProxiedLiveUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('/api/live')) return url;
+    // 经同源实时流代理中继：100% 消除 Mixed Content 混合内容拦截与 CORS 跨域限制
+    return `/api/live?url=${encodeURIComponent(url)}`;
+  }
+
   playLiveStream(channel, lineIndex = 0) {
     const urls = channel.streamUrls && channel.streamUrls.length ? channel.streamUrls : [channel.streamUrl];
     if (lineIndex >= urls.length) lineIndex = 0;
     this.currentTvLineIndex = lineIndex;
-    const streamUrl = urls[lineIndex];
+    const rawStreamUrl = urls[lineIndex];
+    const playableUrl = this.getProxiedLiveUrl(rawStreamUrl);
 
     document.getElementById('modal-current-ep').innerText = `正在直播 · ${channel.badge} · 线路 ${lineIndex + 1}/${urls.length} ${lineIndex === 0 ? '(极速优先)' : '(备用稳定)'}`;
     
@@ -930,21 +952,21 @@ class DuCinemaApp {
         this.tvWatchdogTimer = null;
       }
       if (lineIndex + 1 < urls.length) {
-        console.warn(`[LiveWatchdog] Line ${lineIndex + 1} issue (${reason}). Auto-switching to line ${lineIndex + 2}...`);
+        console.warn(`[LiveWatchdog] Line ${lineIndex + 1} slow (${reason}). Auto-switching to line ${lineIndex + 2}...`);
         this.showToast(`⚡ 线路 ${lineIndex + 1} 响应稍慢，已为您无缝秒切备用线路 ${lineIndex + 2}`);
         this.playLiveStream(channel, lineIndex + 1);
       } else {
         loadingOverlay.style.display = 'none';
-        this.showToast('⚠️ 网页端当前信号受浏览器跨域保护限制，推荐点击下方「呼叫渡赏」直连原生硬解！', 4500);
+        this.showToast('⚠️ 当前信号源所有线路尝试完毕，推荐点击下方「呼叫渡赏」唤醒原生硬解秒播！', 5000);
       }
     };
 
-    // Watchdog: If buffering exceeds 4.2 seconds, automatically switch to next line
+    // Watchdog: If buffering exceeds 6.5 seconds, automatically switch to next line
     this.tvWatchdogTimer = setTimeout(() => {
       if (this.isLiveMode && (video.paused || video.readyState < 2 || video.currentTime === 0)) {
         switchNextLine('Buffering timeout');
       }
-    }, 4200);
+    }, 6500);
 
     const onPlaySuccess = () => {
       if (this.tvWatchdogTimer) {
@@ -958,24 +980,24 @@ class DuCinemaApp {
     video.onloadeddata = onPlaySuccess;
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // iOS Safari native HLS
-      video.src = streamUrl;
+      // iOS Safari / Apple WebKit 原生 HLS (iPhone / iPad / Mac Safari)
+      video.src = playableUrl;
       video.addEventListener('loadedmetadata', () => {
         onPlaySuccess();
         video.play().catch(() => {});
       }, { once: true });
     } else if (window.Hls && Hls.isSupported()) {
-      // HLS.js for Chrome / PC Edge / Android
+      // HLS.js for Samsung Internet / Chrome / PC Edge / Android
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 30,
-        manifestLoadingTimeOut: 3500,
-        manifestLoadingMaxRetry: 1,
-        levelLoadingTimeOut: 3500,
-        fragLoadingTimeOut: 4000
+        manifestLoadingTimeOut: 6000,
+        manifestLoadingMaxRetry: 2,
+        levelLoadingTimeOut: 6000,
+        fragLoadingTimeOut: 6000
       });
-      this.hls.loadSource(streamUrl);
+      this.hls.loadSource(playableUrl);
       this.hls.attachMedia(video);
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -989,7 +1011,7 @@ class DuCinemaApp {
         }
       });
     } else {
-      video.src = streamUrl;
+      video.src = playableUrl;
       onPlaySuccess();
       video.play().catch(() => {});
     }
