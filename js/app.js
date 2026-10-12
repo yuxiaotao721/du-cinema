@@ -642,7 +642,8 @@ class DuCinemaApp {
 
     if (this.isLiveMode && this.currentLiveChannel) {
       const urls = this.currentLiveChannel.streamUrls || [this.currentLiveChannel.streamUrl];
-      streamUrl = urls[this.currentTvLineIndex] || urls[0] || this.currentLiveChannel.streamUrl;
+      const selectedIndex = (this.userSelectedLineIndex !== undefined && this.userSelectedLineIndex !== null) ? this.userSelectedLineIndex : 0;
+      streamUrl = urls[selectedIndex] || urls[0] || this.currentLiveChannel.streamUrl;
       title = `[电视直播] ${this.currentLiveChannel.name}`;
     } else if (this.currentMovie && this.currentEpisodes && this.currentEpisodes[this.currentEpIndex]) {
       const ep = this.currentEpisodes[this.currentEpIndex];
@@ -663,7 +664,7 @@ class DuCinemaApp {
 
     if (isAndroid) {
       this.showToast('🚀 正在直连唤醒「渡赏」原生硬解播放器...');
-      const dushangIntent = `intent://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}#Intent;scheme=dushang;package=dev.yxt.ferrygram;action=android.intent.action.VIEW;end`;
+      const dushangIntent = `intent://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}#Intent;scheme=dushang;package=dev.yxt.ferrygram;action=android.intent.action.VIEW;launchFlags=0x14000000;end`;
       window.location.href = dushangIntent;
     } else {
       const dushangScheme = `dushang://play?url=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`;
@@ -891,14 +892,17 @@ class DuCinemaApp {
     if (!rawUrl) return '';
     if (rawUrl.startsWith('/api/live')) return rawUrl;
 
-    // 智能双轨内核：
-    // 1. 如果源本身是 HTTPS 协议（如蓝天下各大台、阿里云/腾讯云 CDN），优先直接直连播放！
-    //    免除代理服务器中转，零中间延迟，在苹果 Safari 和安卓 Chrome/三星浏览器中秒开！
+    // 1. 如果源本身已经是 HTTPS
     if (rawUrl.startsWith('https://')) {
       return rawUrl;
     }
 
-    // 2. 如果源为 HTTP，在当前 HTTPS 页面下自动走 /api/live 同源代理中继，彻底阻断 Mixed Content 拦截
+    // 2. 如果当前页面处于 GitHub Pages 静态托管（无后端 /api/live 反代）或本身为 HTTP
+    if (window.location.hostname.endsWith('github.io') || window.location.protocol === 'http:') {
+      return rawUrl;
+    }
+
+    // 3. 在支持 Serverless/Node.js 反代的部署环境（Vercel / Cloudflare / 本地 server）
     return `/api/live?url=${encodeURIComponent(rawUrl)}`;
   }
 
@@ -928,6 +932,7 @@ class DuCinemaApp {
       modeBar.querySelectorAll('.mode-tab').forEach(btn => {
         btn.addEventListener('click', () => {
           const target = parseInt(btn.dataset.line, 10);
+          this.userSelectedLineIndex = target;
           if (target !== this.currentTvLineIndex) {
             this.playLiveStream(channel, target);
           }

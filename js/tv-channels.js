@@ -23,8 +23,7 @@ window.TV_CHANNELS = [
       "http://125.125.236.31:9901/tsfile/live/0005_1.m3u8?key=txiptv&playlive=1&authid=0",
       "http://61.136.172.236:9901/tsfile/live/0005_1.m3u8",
       "http://120.238.94.82:9901/tsfile/live/1005_1.m3u8?key=txiptv",
-      "http://183.11.239.36:808/hls/93/index.m3u8",
-      "http://[2409:8087:8:21::18]:6610/otttv.bj.chinamobile.com/PLTV/88888888/224/3221226469/1.m3u8?"
+      "http://183.11.239.36:808/hls/93/index.m3u8"
     ],
     "epg": "天下足球 · 体育新闻 · 国际顶级职业联赛 · 现场直击",
     "hot": true
@@ -36,13 +35,12 @@ window.TV_CHANNELS = [
     "categoryName": "体育赛事",
     "badge": "1080P 高清",
     "logo": "https://live.fanmingming.com/tv/CCTV5plus.png",
-    "streamUrl": "http://183.11.239.36:808/hls/94/index.m3u8",
+    "streamUrl": "http://125.125.236.31:9901/tsfile/live/0016_1.m3u8?key=txiptv&playlive=1&authid=0",
     "streamUrls": [
-      "http://183.11.239.36:808/hls/94/index.m3u8",
       "http://125.125.236.31:9901/tsfile/live/0016_1.m3u8?key=txiptv&playlive=1&authid=0",
       "http://61.136.172.236:9901/tsfile/live/0016_1.m3u8",
       "http://120.238.94.82:9901/tsfile/live/1016_1.m3u8?key=txiptv",
-      "http://[2409:8087:8:21::18]:6610/otttv.bj.chinamobile.com/PLTV/88888888/224/3221226894/1.m3u8?"
+      "http://183.11.239.36:808/hls/94/index.m3u8"
     ],
     "epg": "实况录像 · 国际顶级赛事直播 · 赛事深度集锦",
     "hot": true
