@@ -53,13 +53,20 @@ class DuCinemaApp {
       vod_play_url: '预告片$https://v.gsuus.com/play/xboNyywa$$$预告片$https://v.gsuus.com/play/xboNyywa/index.m3u8'
     };
 
+    this.storageKey = 'ducinema_history';
+    this.pendingResumeTime = null;
+    this.lastProgressSave = 0;
+
     this.init();
   }
 
   init() {
     this.bindEvents();
+    this.initVideoProgressEvents();
+    this.initDoubleTapGesture();
     this.updateApiUrlDisplay();
     this.initLiveTv();
+    this.renderRecentWatch();
     this.loadCatalog();
 
     // Check URL parameters (e.g. ?channel=cctv5 or ?view=live)
@@ -171,6 +178,9 @@ class DuCinemaApp {
     document.getElementById('modal-copy-btn').addEventListener('click', () => {
       this.copyCurrentStreamUrl();
     });
+
+    // Recent Watch Clear Button
+    document.getElementById('recent-clear-btn')?.addEventListener('click', () => this.clearHistory());
 
     // Hero Spotlight Actions
     document.getElementById('hero-play-dushang').addEventListener('click', () => {
@@ -335,6 +345,35 @@ class DuCinemaApp {
         list = list.filter(item => (item.vod_year || '').includes(this.currentYear));
       }
 
+      // Multi-source Auto Fallback Search if primary source returns empty
+      if (list.length === 0 && this.currentKeyword) {
+        counter.innerText = '正在智能联搜全网备用片库...';
+        const alternateSources = ['guangsu', 'ffzy', 'xinlang', 'bdzy'].filter(s => s !== this.currentSource);
+        for (const altSource of alternateSources) {
+          try {
+            const altParams = new URLSearchParams({
+              ac: 'detail',
+              pg: '1',
+              source: altSource,
+              wd: this.currentKeyword
+            });
+            const altRes = await fetch(`${this.apiEndpoint}?${altParams.toString()}`);
+            if (altRes.ok) {
+              const altData = await altRes.json();
+              if (altData && altData.list && altData.list.length > 0) {
+                list = altData.list;
+                this.currentSource = altSource;
+                this.updateApiUrlDisplay();
+                this.showToast(`🔍 主线路未收录，已自动切换至【${this.sourceInfo[altSource]?.name || altSource}】找到 ${list.length} 部片源！`);
+                break;
+              }
+            }
+          } catch (e) {
+            // continue
+          }
+        }
+      }
+
       this.movies = list;
 
       if (list.length === 0) {
@@ -495,9 +534,21 @@ class DuCinemaApp {
     return episodes;
   }
 
-  openModal(movie, epIndex = 0) {
+  openModal(movie, epIndex = 0, resumeTime = null) {
     this.currentMovie = movie;
     this.currentEpisodes = this.parsePlayUrls(movie.vod_play_url);
+    
+    // Auto restore resume progress if resumeTime is not passed
+    if (resumeTime === null) {
+      const saved = this.getSavedHistory(movie.vod_id || movie.vod_name);
+      if (saved && saved.time > 10) {
+        resumeTime = saved.time;
+        if (saved.epIndex !== undefined && this.currentEpisodes[saved.epIndex]) {
+          epIndex = saved.epIndex;
+        }
+      }
+    }
+    this.pendingResumeTime = resumeTime;
     this.currentEpIndex = epIndex;
 
     this.isLiveMode = false;
@@ -512,6 +563,9 @@ class DuCinemaApp {
     const epCountBadge = document.getElementById('ep-count-badge');
     const epGrid = document.getElementById('episodes-grid');
     if (epGrid) epGrid.className = 'episodes-grid';
+
+    // In-player source switcher pills
+    this.renderModalSourcePills();
 
     // Restore standard movie mode buttons
     const modeBar = document.querySelector('.player-mode-bar');
@@ -556,6 +610,7 @@ class DuCinemaApp {
 
   switchEpisode(index) {
     this.currentEpIndex = index;
+    this.pendingResumeTime = null;
     const epButtons = document.querySelectorAll('.ep-btn');
     epButtons.forEach((btn, idx) => {
       btn.classList.toggle('active', idx === index);
@@ -569,9 +624,21 @@ class DuCinemaApp {
     const ep = this.currentEpisodes[index];
     document.getElementById('modal-current-ep').innerText = `正在播放：${ep.name}`;
 
+    // Save history point
+    this.saveHistory(this.currentMovie, index, this.pendingResumeTime || 0, 0);
+
     const video = this.videoEl;
     const iframe = this.iframeEl;
     const loadingOverlay = document.getElementById('player-loading');
+
+    const applyResume = () => {
+      if (this.pendingResumeTime && this.pendingResumeTime > 5) {
+        const t = this.pendingResumeTime;
+        video.currentTime = t;
+        this.showToast(`💡 记忆续播：已恢复至上次进度 ${this.formatTime(t)}`);
+        this.pendingResumeTime = null;
+      }
+    };
 
     // 1. Iframe Mode (Default & 100% Guaranteed cross-origin free)
     if (this.playerMode === 'iframe') {
@@ -614,6 +681,7 @@ class DuCinemaApp {
       this.hls.attachMedia(video);
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
         loadingOverlay.style.display = 'none';
+        applyResume();
         video.play().catch(e => console.log('Autoplay blocked:', e));
       });
       this.hls.on(Hls.Events.ERROR, (event, data) => {
@@ -628,11 +696,13 @@ class DuCinemaApp {
       video.src = streamUrl;
       video.addEventListener('loadedmetadata', () => {
         loadingOverlay.style.display = 'none';
+        applyResume();
         video.play().catch(e => console.log('Autoplay blocked:', e));
       }, { once: true });
     } else {
       loadingOverlay.style.display = 'none';
       video.src = streamUrl;
+      applyResume();
     }
   }
 
@@ -698,6 +768,16 @@ class DuCinemaApp {
       this.tvWatchdogTimer = null;
     }
 
+    if (this.videoEl && this.currentMovie && this.videoEl.currentTime > 2) {
+      this.saveHistory(
+        this.currentMovie,
+        this.currentEpIndex,
+        Math.floor(this.videoEl.currentTime),
+        Math.floor(this.videoEl.duration || 0)
+      );
+    }
+    this.pendingResumeTime = null;
+
     if (this.iframeEl) {
       this.iframeEl.src = 'about:blank';
     }
@@ -713,6 +793,274 @@ class DuCinemaApp {
     this.isLiveMode = false;
     const epGrid = document.getElementById('episodes-grid');
     if (epGrid) epGrid.className = 'episodes-grid';
+  }
+
+  // =========================================================================
+  // Watch History & Auto-Play Helpers
+  // =========================================================================
+
+  initVideoProgressEvents() {
+    if (!this.videoEl) return;
+
+    // Throttle progress updates to localStorage every 3s
+    this.videoEl.addEventListener('timeupdate', () => {
+      const now = Date.now();
+      if (now - this.lastProgressSave > 3000) {
+        this.lastProgressSave = now;
+        if (this.currentMovie && this.videoEl.currentTime > 2) {
+          this.saveHistory(
+            this.currentMovie,
+            this.currentEpIndex,
+            Math.floor(this.videoEl.currentTime),
+            Math.floor(this.videoEl.duration || 0)
+          );
+        }
+      }
+    });
+
+    // Auto-play next episode
+    this.videoEl.addEventListener('ended', () => {
+      if (this.isLiveMode) return;
+      if (this.currentEpisodes && this.currentEpIndex < this.currentEpisodes.length - 1) {
+        const nextIndex = this.currentEpIndex + 1;
+        const nextEp = this.currentEpisodes[nextIndex];
+        this.showToast(`🎉 本集播放完毕，3秒后自动续播【${nextEp.name}】...`);
+        setTimeout(() => {
+          const modal = document.getElementById('player-modal');
+          if (modal && modal.classList.contains('active')) {
+            this.switchEpisode(nextIndex);
+          }
+        }, 3000);
+      }
+    });
+  }
+
+  initDoubleTapGesture() {
+    const container = document.getElementById('video-container');
+    if (!container) return;
+
+    let lastTap = 0;
+    container.addEventListener('click', (e) => {
+      const now = Date.now();
+      const diff = now - lastTap;
+      lastTap = now;
+
+      if (diff < 320 && diff > 50) {
+        // Double tap detected
+        const rect = container.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+
+        if (this.videoEl && this.playerMode === 'hls' && !this.isLiveMode) {
+          if (clickX < width * 0.45) {
+            // Seek backward 10s
+            this.videoEl.currentTime = Math.max(0, this.videoEl.currentTime - 10);
+            this.triggerSeekRipple('left');
+          } else if (clickX > width * 0.55) {
+            // Seek forward 10s
+            this.videoEl.currentTime = Math.min(this.videoEl.duration || 99999, this.videoEl.currentTime + 10);
+            this.triggerSeekRipple('right');
+          }
+        }
+      }
+    });
+  }
+
+  triggerSeekRipple(dir) {
+    const el = document.getElementById(dir === 'left' ? 'seek-ripple-left' : 'seek-ripple-right');
+    if (!el) return;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 500);
+  }
+
+  getHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  getSavedHistory(vodIdOrName) {
+    const list = this.getHistory();
+    return list.find(item => item.id == vodIdOrName || item.name === vodIdOrName) || null;
+  }
+
+  saveHistory(movie, epIndex, time = 0, duration = 0) {
+    if (!movie) return;
+    try {
+      let list = this.getHistory();
+      const id = movie.vod_id || movie.vod_name;
+      const epName = (this.currentEpisodes && this.currentEpisodes[epIndex]) ? this.currentEpisodes[epIndex].name : `第${epIndex + 1}集`;
+
+      // Filter existing
+      list = list.filter(item => item.id != id && item.name !== movie.vod_name);
+
+      list.unshift({
+        id: id,
+        name: movie.vod_name || '未知影片',
+        pic: movie.vod_pic || '',
+        year: movie.vod_year || '2026',
+        category: movie.type_name || movie.vod_class || '影视',
+        epIndex: epIndex,
+        epName: epName,
+        time: time,
+        duration: duration,
+        movie: movie,
+        updatedAt: Date.now()
+      });
+
+      if (list.length > 20) list = list.slice(0, 20);
+      localStorage.setItem(this.storageKey, JSON.stringify(list));
+      this.renderRecentWatch();
+    } catch (e) {
+      console.error('Save history failed:', e);
+    }
+  }
+
+  clearHistory() {
+    localStorage.removeItem(this.storageKey);
+    this.renderRecentWatch();
+    this.showToast('已清空全部播放历史');
+  }
+
+  renderRecentWatch() {
+    const section = document.getElementById('recent-watch-section');
+    const track = document.getElementById('recent-track');
+    if (!section || !track) return;
+
+    const list = this.getHistory();
+    if (list.length === 0) {
+      section.style.display = 'none';
+      track.innerHTML = '';
+      return;
+    }
+
+    section.style.display = 'block';
+    track.innerHTML = '';
+
+    list.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'recent-card';
+
+      const progressPercent = (item.duration > 0 && item.time > 0) 
+        ? Math.min(100, Math.round((item.time / item.duration) * 100)) 
+        : (item.time > 0 ? 50 : 0);
+      
+      const timeText = item.time > 0 ? `看到 ${this.formatTime(item.time)}` : '刚开始看';
+
+      card.innerHTML = `
+        <div class="recent-card-poster-wrap">
+          <img class="recent-card-poster" src="${item.pic}" alt="${item.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60'">
+          <div class="recent-card-play-icon">▶</div>
+          <div class="recent-card-progress-bar" style="width: ${progressPercent}%;"></div>
+        </div>
+        <div class="recent-card-info">
+          <div class="recent-card-title" title="${item.name}">${item.name}</div>
+          <div class="recent-card-sub">
+            <span>${item.epName}</span>
+            <span>${timeText}</span>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        this.openModal(item.movie, item.epIndex, item.time);
+      });
+
+      track.appendChild(card);
+    });
+  }
+
+  formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  // =========================================================================
+  // In-Player Source Switching
+  // =========================================================================
+
+  renderModalSourcePills() {
+    const wrap = document.getElementById('modal-source-pills');
+    if (!wrap) return;
+
+    wrap.innerHTML = '';
+    const sources = [
+      { key: 'guangsu', name: '🌟 光速' },
+      { key: 'ffzy', name: '🚀 非凡' },
+      { key: 'bdzy', name: '💎 百度' },
+      { key: 'xinlang', name: '🎬 新浪' }
+    ];
+
+    sources.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = `source-pill-btn ${this.currentSource === s.key ? 'active' : ''}`;
+      btn.innerText = s.name;
+      btn.dataset.source = s.key;
+      btn.addEventListener('click', () => this.switchSourceInModal(s.key));
+      wrap.appendChild(btn);
+    });
+  }
+
+  async switchSourceInModal(newSource) {
+    if (newSource === this.currentSource) return;
+    const wrap = document.getElementById('modal-source-pills');
+    const targetBtn = wrap?.querySelector(`[data-source="${newSource}"]`);
+    if (targetBtn) {
+      targetBtn.innerText = '切源中...';
+      targetBtn.disabled = true;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        ac: 'detail',
+        source: newSource,
+        wd: this.currentMovie.vod_name
+      });
+      const res = await fetch(`${this.apiEndpoint}?${params.toString()}`);
+      if (!res.ok) throw new Error('Source query failed');
+      const data = await res.json();
+      
+      const found = (data.list || []).find(m => m.vod_name === this.currentMovie.vod_name) || (data.list && data.list[0]);
+      if (!found || !found.vod_play_url) {
+        this.showToast(`【${this.sourceInfo[newSource]?.name || newSource}】暂无该片完整片源`);
+        this.renderModalSourcePills();
+        return;
+      }
+
+      this.currentSource = newSource;
+      this.updateApiUrlDisplay();
+      this.currentMovie = found;
+      this.currentEpisodes = this.parsePlayUrls(found.vod_play_url);
+      
+      const epCountBadge = document.getElementById('ep-count-badge');
+      if (epCountBadge) epCountBadge.innerText = `共 ${this.currentEpisodes.length || 1} 集`;
+
+      const epGrid = document.getElementById('episodes-grid');
+      if (epGrid) {
+        epGrid.innerHTML = '';
+        this.currentEpisodes.forEach((ep, idx) => {
+          const btn = document.createElement('button');
+          btn.className = `ep-btn ${idx === this.currentEpIndex ? 'active' : ''}`;
+          btn.innerText = ep.name;
+          btn.addEventListener('click', () => this.switchEpisode(idx));
+          epGrid.appendChild(btn);
+        });
+      }
+
+      const safeEpIndex = Math.min(this.currentEpIndex, this.currentEpisodes.length - 1);
+      this.renderModalSourcePills();
+      this.showToast(`已无感切源至【${this.sourceInfo[newSource]?.name || newSource}】`);
+      this.playEpisode(safeEpIndex);
+
+    } catch (e) {
+      console.error('Switch source error:', e);
+      this.showToast('切源失败，请重试');
+      this.renderModalSourcePills();
+    }
   }
 
   closeApiModal() {
