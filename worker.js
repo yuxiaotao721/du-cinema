@@ -189,6 +189,58 @@ export default {
       return handleLive(request);
     }
 
+    if (url.pathname === '/tvbox.json' || url.pathname === '/api/tvbox') {
+      const tvboxConfig = {
+        spider: '',
+        sites: [
+          {
+            key: 'ducinema_guangsu',
+            name: '渡影 🌟 光速1080P',
+            type: 1,
+            api: `${url.origin}/api/vod?source=guangsu`,
+            searchable: 1,
+            quickSearch: 1,
+            filterable: 1
+          },
+          {
+            key: 'ducinema_bdzy',
+            name: '渡影 💎 百度蓝光大片',
+            type: 1,
+            api: `${url.origin}/api/vod?source=bdzy`,
+            searchable: 1,
+            quickSearch: 1,
+            filterable: 1
+          },
+          {
+            key: 'ducinema_ffzy',
+            name: '渡影 🚀 非凡极速秒播',
+            type: 1,
+            api: `${url.origin}/api/vod?source=ffzy`,
+            searchable: 1,
+            quickSearch: 1,
+            filterable: 1
+          },
+          {
+            key: 'ducinema_xinlang',
+            name: '渡影 🎬 新浪综合全库',
+            type: 1,
+            api: `${url.origin}/api/vod?source=xinlang`,
+            searchable: 1,
+            quickSearch: 1,
+            filterable: 1
+          }
+        ]
+      };
+      return new Response(JSON.stringify(tvboxConfig, null, 2), {
+        status: 200,
+        headers: {
+          ...CORS_HEADERS,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=300'
+        }
+      });
+    }
+
     // Serve static assets if binding exists
     if (env.ASSETS) {
       return env.ASSETS.fetch(request);
