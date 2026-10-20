@@ -5,16 +5,8 @@
       "key": "ducinema_guangsu",
       "name": "渡影 🌟 光速1080P",
       "type": 1,
-      "api": "https://cinema.20091025.xyz/api/vod?source=guangsu",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "ducinema_bdzy",
-      "name": "渡影 💎 百度蓝光大片",
-      "type": 1,
-      "api": "https://cinema.20091025.xyz/api/vod?source=bdzy",
+      "api": "https://api.guangsuapi.com/api.php/provide/vod/",
+      "playUrl": "",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -23,7 +15,18 @@
       "key": "ducinema_ffzy",
       "name": "渡影 🚀 非凡极速秒播",
       "type": 1,
-      "api": "https://cinema.20091025.xyz/api/vod?source=ffzy",
+      "api": "https://cj.ffzyapi.com/api.php/provide/vod/",
+      "playUrl": "",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "ducinema_bdzy",
+      "name": "渡影 💎 百度蓝光大片",
+      "type": 1,
+      "api": "https://api.apibdzy.com/api.php/provide/vod/",
+      "playUrl": "",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -32,7 +35,8 @@
       "key": "ducinema_xinlang",
       "name": "渡影 🎬 新浪综合全库",
       "type": 1,
-      "api": "https://cinema.20091025.xyz/api/vod?source=xinlang",
+      "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+      "playUrl": "",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
