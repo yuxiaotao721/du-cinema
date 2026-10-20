@@ -1,0 +1,8 @@
+node_modules/
+.git/
+.wrangler/
+tmp-chrome/
+worker.js
+wrangler.jsonc
+package.json
+README.md
